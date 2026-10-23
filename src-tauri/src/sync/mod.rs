@@ -749,4 +749,126 @@ mod tests {
             );
         }
     }
+    // Bounded adversarial probes, using synthetic databases and loopback only.
+    #[test]
+    fn pentest_authenticated_malformed_frames_preserve_study_records() {
+        let payloads = vec![
+            b"{}".to_vec(),
+            b"{\"protocol\":1,\"records\":[],\"unknown\":true}".to_vec(),
+            b"{\"protocol\":2,\"records\":[]}".to_vec(),
+            vec![0xff, 0xfe],
+            format!("{}0{}", "[".repeat(200), "]".repeat(200)).into_bytes(),
+        ];
+        for body in payloads {
+            let m = manager(0);
+            let before = serde_json::to_value(m.engine.lock().unwrap().backup().unwrap()).unwrap();
+            let h = host();
+            m.state.lock().unwrap().config.host = Some(h.clone());
+            let l = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+            let addr = l.local_addr().unwrap();
+            let server = m.clone();
+            let hc = h.clone();
+            let task = thread::spawn(move || {
+                server.serve(l.accept().unwrap().0, server_config(&hc).unwrap(), &hc)
+            });
+            let config = ClientConfig::builder_with_provider(Arc::new(
+                rustls::crypto::ring::default_provider(),
+            ))
+            .with_safe_default_protocol_versions()
+            .unwrap()
+            .dangerous()
+            .with_custom_certificate_verifier(Arc::new(Pin(Sha256::digest(&h.cert).into())))
+            .with_no_client_auth();
+            let mut client = StreamOwned::new(
+                ClientConnection::new(
+                    Arc::new(config),
+                    ServerName::try_from("focusflow.local").unwrap(),
+                )
+                .unwrap(),
+                TimedTcp::new(TcpStream::connect(addr).unwrap()),
+            );
+            client.write_all(&h.token).unwrap();
+            client
+                .write_all(&(body.len() as u32).to_be_bytes())
+                .unwrap();
+            client.write_all(&body).unwrap();
+            client.flush().unwrap();
+            drop(client);
+            assert!(task.join().unwrap().is_err());
+            assert_eq!(
+                before,
+                serde_json::to_value(m.engine.lock().unwrap().backup().unwrap()).unwrap()
+            );
+        }
+    }
+    #[test]
+    fn pentest_frame_parser_mutations_do_not_panic() {
+        let mut seed = 42u64;
+        for size in 0..4096 {
+            let mut bytes = (size as u32).to_be_bytes().to_vec();
+            for _ in 0..size {
+                seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1);
+                bytes.push((seed >> 32) as u8);
+            }
+            let outcome = std::panic::catch_unwind(|| read_frame::<Bundle>(&mut &bytes[..]));
+            assert!(outcome.is_ok());
+            assert!(outcome.unwrap().is_err());
+        }
+    }
+    #[test]
+    fn pentest_total_deadline_cannot_be_extended_by_trickling_bytes() {
+        let l = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        let mut client = TcpStream::connect(l.local_addr().unwrap()).unwrap();
+        let mut server = TimedTcp::new(l.accept().unwrap().0);
+        server.deadline = Instant::now() + Duration::from_millis(150);
+        client.write_all(b"x").unwrap();
+        let mut b = [0];
+        server.read_exact(&mut b).unwrap();
+        thread::sleep(Duration::from_millis(200));
+        client.write_all(b"y").unwrap();
+        assert!(server.read_exact(&mut b).is_err());
+    }
+    #[test]
+    fn pentest_idle_unauthenticated_connection_delays_legitimate_sync() {
+        let fixture = manager(0);
+        let mut h = host();
+        let reserve = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        h.port = reserve.local_addr().unwrap().port();
+        drop(reserve);
+        atomic_write(
+            &fixture.dir.join("wifi-sync.json"),
+            &serde_json::to_vec(&Config {
+                host: Some(h.clone()),
+                peer: None,
+            })
+            .unwrap(),
+        )
+        .unwrap();
+        let server = LanSync::new(fixture.engine.clone(), fixture.dir.clone(), true);
+        let address = SocketAddr::from((Ipv4Addr::LOCALHOST, h.port));
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while !server.status().unwrap().ready {
+            assert!(Instant::now() < deadline);
+            thread::sleep(Duration::from_millis(20));
+        }
+        let idle = TcpStream::connect(address).unwrap();
+        while !server.status().unwrap().busy {
+            assert!(Instant::now() < deadline);
+            thread::sleep(Duration::from_millis(20));
+        }
+        let client = manager(5000);
+        let peer = parse_code(&pairing_code(&h, address)).unwrap();
+        client.state.lock().unwrap().config.peer = Some(peer.clone());
+        let (tx, rx) = std::sync::mpsc::channel();
+        let task = thread::spawn(move || tx.send(client.exchange(&peer)).unwrap());
+        assert!(
+            rx.recv_timeout(Duration::from_secs(1)).is_err(),
+            "Unexpected: legitimate sync was not blocked"
+        );
+        // Releasing the unauthenticated socket lets the queued, valid client finish.
+        drop(idle);
+        assert!(rx.recv_timeout(Duration::from_secs(5)).unwrap().is_ok());
+        task.join().unwrap();
+        server.configure("off", None).unwrap();
+    }
 }

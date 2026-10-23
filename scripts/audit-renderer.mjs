@@ -56,7 +56,10 @@ const server = createServer(async (req, res) => {
 await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
 
 let browser;
-const out = path.join(root, "audit/2026-10-22");
+const out = path.resolve(
+  root,
+  process.env.FOCUSFLOW_AUDIT_OUTPUT || "audit/2026-10-22",
+);
 await mkdir(out, { recursive: true });
 let canaryRequests = 0;
 const canary = createServer((req, res) => {

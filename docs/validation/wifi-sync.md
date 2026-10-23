@@ -2,6 +2,8 @@
 
 23 Ekim 2026. Aynı yerel ağdaki Android istemci ve Linux sunucu için isteğe bağlı eşitleme.
 
+**Sonraki güvenlik incelemesi:** [23 Ekim sızma testi](security-2026-10-23.md) iki açık eşitleme sorunu buldu. Aşağıdaki işlev testlerinin başarılı olması güvenlik onayı değildir.
+
 ## Otomatik kontroller
 
 - **67 Rust testi başarılı:** 24 mevcut zamanlayıcı/SQLite testi, 22 güvenlik testi, 6 yerel TLS/kimlik/çerçeve testi, 14 kayıt birleştirme testi ve 1 Android RPC doğrulama testi.

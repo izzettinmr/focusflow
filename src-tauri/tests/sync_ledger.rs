@@ -258,3 +258,59 @@ fn every_accepted_session_field_is_persisted_consistently() {
     assert_eq!(verified.sessions[0].mode, "pomodoro");
     assert_eq!(verified.sessions[0].target_ms, 60_000);
 }
+
+// Documents a reproduced trust-boundary weakness; not a mitigation test.
+#[test]
+fn pentest_paired_peer_can_advance_clock_beyond_accepted_version_range() {
+    let mut a = engine();
+    let mut b = engine();
+    let mut incoming = ledger::prepare(&mut a).unwrap();
+    incoming.records[0].version = 4_102_444_800_000;
+    ledger::apply(&mut b, incoming).unwrap();
+    b.save_category(Some(1), "Local edit after attack".into(), "#123456".into())
+        .unwrap();
+    let outgoing = ledger::prepare(&mut b).unwrap();
+    assert!(outgoing
+        .records
+        .iter()
+        .any(|r| r.version > 4_102_444_800_000));
+    assert!(ledger::apply(&mut a, outgoing).is_err());
+}
+
+#[test]
+fn pentest_invalid_sync_metadata_is_rejected_atomically() {
+    let mut source = engine();
+    finish(&mut source, 0, 1000);
+    let template = ledger::prepare(&mut source).unwrap();
+    for case in 0..9 {
+        let mut target = engine();
+        let before = serde_json::to_value(target.backup().unwrap()).unwrap();
+        let mut payload = template.clone();
+        match case {
+            0 => payload.protocol = u32::MAX,
+            1 => payload.records[0].uid = "../../etc/passwd".into(),
+            2 => payload.records[0].writer = "'; DROP TABLE sessions;--".into(),
+            3 => payload.records[0].version = i64::MAX,
+            4 => payload.records[0].version = -1,
+            5 => payload.records[0].kind = "settings".into(),
+            6 => payload.records.push(payload.records[0].clone()),
+            7 => {
+                payload.records[0].content = None;
+                payload.records[0].version = Stamp::now().wall;
+            }
+            _ => payload.records[0].writer = "a".repeat(65),
+        }
+        assert!(ledger::apply(&mut target, payload).is_err(), "case {case}");
+        assert_eq!(
+            before,
+            serde_json::to_value(target.backup().unwrap()).unwrap()
+        );
+        assert_eq!(
+            target
+                .db
+                .query_row("PRAGMA integrity_check", [], |r| r.get::<_, String>(0))
+                .unwrap(),
+            "ok"
+        );
+    }
+}
