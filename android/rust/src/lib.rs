@@ -126,7 +126,7 @@ fn dispatch(store: &mut Store, cmd: &str, a: Value) -> Result<Value, String> {
         // These commands are called only by native Android code, never exposed by the JS allowlist.
         "service_tick" => {
             return Ok(
-                json!({"active":e.active()?,"messages":std::mem::take(&mut e.notifications),"notice":e.notice}),
+                json!({"language":e.settings()?.language,"active":e.active()?,"messages":std::mem::take(&mut e.notifications),"notice":e.notice}),
             )
         }
         "export_data" => return value(export(e, &arg::<String>(&a, "format")?)?),

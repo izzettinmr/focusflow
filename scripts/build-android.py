@@ -30,6 +30,7 @@ run('npm','run','build')
 web = build/'assets/web'
 if web.exists(): shutil.rmtree(web)
 shutil.copytree(root/'dist',web)
+shutil.copyfile(root/'src/locales/messages.en.json', build/'assets/messages.en.json')
 abis = {'arm64-v8a': ('aarch64-linux-android','aarch64-linux-android26-clang'), 'x86_64': ('x86_64-linux-android','x86_64-linux-android26-clang')}
 if args.abi!='all': abis={args.abi: abis[args.abi]}
 for abi,(target,clang) in abis.items():

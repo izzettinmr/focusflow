@@ -97,6 +97,69 @@ try {
   await page.goto(`http://127.0.0.1:${server.address().port}`);
   await page.getByRole("heading", { name: "Genel bakış" }).waitFor();
   await mkdir("test-results", { recursive: true });
+  // Language is stored by the real SQLite engine; reload must preserve it.
+  await page.getByRole("button", { name: "Ayarlar", exact: true }).click();
+  await page.getByLabel("Dil / Language", { exact: true }).selectOption("en");
+  await page
+    .getByRole("button", { name: "Ayarları kaydet", exact: true })
+    .click();
+  await page.getByRole("heading", { name: "Settings", exact: true }).waitFor();
+  assert.equal((await rpc("snapshot")).ok.settings.language, "en");
+  assert.equal(await page.locator("html").getAttribute("lang"), "en");
+  await page.reload();
+  await page
+    .getByRole("heading", { name: /^Overview/ })
+    .waitFor()
+    .catch(async (e) => {
+      console.error(
+        "Language reload diagnostics",
+        await page.locator("body").innerText(),
+        await rpc("snapshot"),
+        errors,
+      );
+      throw e;
+    });
+  for (const name of [
+    "Focus time",
+    "Statistics",
+    "Study history",
+    "My courses",
+    "Settings",
+  ]) {
+    await page.getByRole("button", { name, exact: true }).click();
+    await page.getByRole("heading", { name, exact: true }).waitFor();
+  }
+  await page
+    .getByLabel("Pairing code from your computer")
+    .fill("FF1|8.8.8.8:443|x|x");
+  await page
+    .getByRole("button", { name: "Pair and sync", exact: true })
+    .click();
+  await page
+    .getByRole("alert")
+    .filter({ hasText: "Only local IPv4 connections are allowed" })
+    .waitFor();
+  for (const width of [390, 800, 1365]) {
+    await page.setViewportSize({ width, height: 1050 });
+    assert.equal(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > innerWidth,
+      ),
+      false,
+      `English overflow at ${width}`,
+    );
+  }
+  await page.screenshot({
+    path: "test-results/settings-english.png",
+    fullPage: true,
+  });
+  await page.getByLabel("Dil / Language", { exact: true }).selectOption("tr");
+  await page
+    .getByRole("button", { name: "Save settings", exact: true })
+    .click();
+  await page.getByRole("heading", { name: "Ayarlar", exact: true }).waitFor();
+  assert.equal((await rpc("snapshot")).ok.settings.language, "tr");
+  await page.getByRole("button", { name: "Genel bakış", exact: true }).click();
   await page.screenshot({ path: "test-results/dashboard.png", fullPage: true });
   await page.getByRole("button", { name: "Odaklanmaya başla" }).click();
   await page.getByRole("button", { name: "Duraklat", exact: true }).waitFor();
@@ -150,7 +213,7 @@ try {
         .count(),
       0,
     );
-  } else {
+  } else if (process.env.FOCUSFLOW_SKIP_HOST_TEST !== "1") {
     await page
       .getByRole("button", {
         name: "Bu bilgisayarda eşitlemeyi aç",
@@ -159,7 +222,15 @@ try {
       .click();
     await page
       .getByText("Telefon bağlantısına hazır", { exact: true })
-      .waitFor();
+      .waitFor()
+      .catch(async (e) => {
+        const status = (await rpc("sync_status")).ok;
+        console.error("Host diagnostic", {
+          mode: status.mode,
+          error: status.error,
+        });
+        throw e;
+      });
     assert.equal((await rpc("sync_status")).ok.mode, "host");
     if (await page.getByLabel("Telefona aktarılacak kod").count()) {
       await page.getByRole("button", { name: "Kodu seç", exact: true }).click();

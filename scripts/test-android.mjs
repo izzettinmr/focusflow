@@ -242,6 +242,16 @@ try {
   await capture("settings");
   await assert.rejects(() => native("export_data", { format: "json" }));
   results.internal_commands_not_exposed_to_js = true;
+  const savedSettings = (await native("snapshot")).settings;
+  await native("save_settings", {
+    settings: { ...savedSettings, language: "en" },
+  });
+  await page.getByRole("heading", { name: "Settings", exact: true }).waitFor();
+  assert.equal(await page.locator("html").getAttribute("lang"), "en");
+  await capture("settings-english-native");
+  assert.equal((await native("snapshot")).settings.language, "en");
+  results.english_ui_and_sqlite = true;
+
   assert.deepEqual(errors, []);
   await native("start", {
     mode: "stopwatch",
@@ -276,9 +286,9 @@ try {
       { timeout: 60000 },
     )
   ).page();
-  await reopened
-    .getByRole("button", { name: "Devam et", exact: true })
-    .waitFor();
+  await reopened.getByRole("button", { name: "Resume", exact: true }).waitFor();
+  assert.equal(await reopened.locator("html").getAttribute("lang"), "en");
+  results.english_survives_restart = true;
   results.force_stop_recovers_paused = true;
   await capture("recovered");
   const backup = (

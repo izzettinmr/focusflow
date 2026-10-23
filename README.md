@@ -1,6 +1,6 @@
 # FocusFlow
 
-Dersini seç, Pomodoro veya kronometreyi başlat, gün sonunda hangi derse ne kadar zaman ayırdığını gör. FocusFlow, Android ve Linux için Türkçe bir çalışma takip uygulamasıdır. Bütün oturumlar aynı SQLite geçmişine kaydedilir; duraklamalar ve molalar çalışma toplamına eklenmez.
+Dersini seç, Pomodoro veya kronometreyi başlat, gün sonunda hangi derse ne kadar zaman ayırdığını gör. FocusFlow, Android ve Linux için Türkçe ve İngilizce bir çalışma takip uygulamasıdır. Bütün oturumlar aynı SQLite geçmişine kaydedilir; duraklamalar ve molalar çalışma toplamına eklenmez.
 
 Uygulama internetsiz çalışır. Hesap açman gerekmez; kayıtların kendi cihazında tutulur.
 
@@ -23,6 +23,7 @@ Görüntüler, geçici test veritabanıyla çalışan gerçek arayüzden alınm�
 - **İstatistikler:** Günlük, haftalık ve aylık toplamlar; 7/30 günlük grafikler, ders dağılımı, hedef ve çalışma serisi.
 - **Wi-Fi eşitleme:** Aynı yerel ağdaki telefon ve bilgisayar arasında dersleri ve bitmiş çalışmaları birleştir.
 - **Kayıt yönetimi:** Geçmişi filtrele ve düzenle. JSON yedeği al, geri yükle veya CSV dışa aktar.
+- **Dil seçimi:** Ayarlar → Dil / Language → English veya Türkçe; seçimini kaydet, yeniden açılışta korunsun.
 - **Yerel kullanım:** Koyu tema, odak modu, bildirimler; Linux'ta sistem tepsisi, Android'de arka plan zamanlayıcı hizmeti.
 
 ## Kurulum

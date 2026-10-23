@@ -10,7 +10,7 @@ public final class TimerService extends Service {
     static final int NOTIFICATION_ID = 11;
     private ScheduledExecutorService worker;
     private long shownSession = -1, shownTarget = -1;
-    private String shownStatus = "";
+    private String shownStatus = "", shownLanguage = "";
     private static PendingIntent openApp(Context c) {
         return PendingIntent.getActivity(c, 1, new Intent(c, MainActivity.class), PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
@@ -20,8 +20,8 @@ public final class TimerService extends Service {
         long remaining = active == null ? 0 : Math.max(0, active.optLong("target_ms") - elapsed);
         Notification.Builder b = new Notification.Builder(this, FocusFlowApp.TIMER_CHANNEL)
             .setSmallIcon(com.focusflow.mobile.R.drawable.ic_notification)
-            .setContentTitle(active == null ? "FocusFlow" : countdown ? "Pomodoro · Odak zamanı" : "Kronometre · Odak zamanı")
-            .setContentText("Çalışman güvenle kaydediliyor. Açmak için dokun.")
+            .setContentTitle(active == null ? "FocusFlow" : countdown ? NativeBridge.tr("Pomodoro · Odak zamanı") : NativeBridge.tr("Kronometre · Odak zamanı"))
+            .setContentText(NativeBridge.tr("Çalışman güvenle kaydediliyor. Açmak için dokun."))
             .setContentIntent(openApp(this)).setOngoing(true).setOnlyAlertOnce(true)
             .setCategory(Notification.CATEGORY_SERVICE).setShowWhen(true)
             .setWhen(System.currentTimeMillis() + (countdown ? remaining : -elapsed))
@@ -35,7 +35,7 @@ public final class TimerService extends Service {
         for (int i=0; i<messages.length(); i++) {
             Notification n = new Notification.Builder(c, FocusFlowApp.DONE_CHANNEL)
                 .setSmallIcon(com.focusflow.mobile.R.drawable.ic_notification).setContentTitle("FocusFlow")
-                .setContentText(messages.optString(i)).setStyle(new Notification.BigTextStyle().bigText(messages.optString(i)))
+                .setContentText(NativeBridge.tr(messages.optString(i))).setStyle(new Notification.BigTextStyle().bigText(NativeBridge.tr(messages.optString(i))))
                 .setContentIntent(openApp(c)).setAutoCancel(true).build();
             nm.notify(100 + i, n);
         }
@@ -62,8 +62,8 @@ public final class TimerService extends Service {
             if (active == null || !"running".equals(active.optString("status"))) {
                 cancelAlarm(this); stopForeground(STOP_FOREGROUND_REMOVE); stopSelf(); return;
             }
-            if (shownSession != active.optLong("id") || shownTarget != active.optLong("target_ms") || !shownStatus.equals(active.optString("status"))) {
-                shownSession = active.optLong("id"); shownTarget = active.optLong("target_ms"); shownStatus = active.optString("status");
+            if (!shownLanguage.equals(NativeBridge.language) || shownSession != active.optLong("id") || shownTarget != active.optLong("target_ms") || !shownStatus.equals(active.optString("status"))) {
+                shownLanguage = NativeBridge.language; shownSession = active.optLong("id"); shownTarget = active.optLong("target_ms"); shownStatus = active.optString("status");
                 getSystemService(NotificationManager.class).notify(NOTIFICATION_ID, notification(active));
                 schedule(active);
             }
@@ -71,7 +71,7 @@ public final class TimerService extends Service {
             // A recording error must stop the timer; never silently continue showing success.
             try { NativeBridge.pause(); } catch (Exception ignored) { }
             JSONObject error = new JSONObject();
-            try { error.put("messages", new JSONArray().put("Kayıt hatası: " + e.getMessage())); } catch (JSONException ignored) { }
+            try { error.put("messages", new JSONArray().put(NativeBridge.tr("Kayıt hatası: ") + e.getMessage())); } catch (JSONException ignored) { }
             showMessages(this, error); cancelAlarm(this); stopForeground(STOP_FOREGROUND_REMOVE); stopSelf();
         }
     }

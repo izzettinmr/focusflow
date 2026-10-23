@@ -36,15 +36,21 @@ pub struct Segment {
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Settings {
+    #[serde(default = "default_language")]
+    pub language: String,
     pub work_minutes: u32,
     pub short_minutes: u32,
     pub long_minutes: u32,
     pub goal_minutes: u32,
     pub long_every: u32,
 }
+fn default_language() -> String {
+    "tr".into()
+}
 impl Default for Settings {
     fn default() -> Self {
         Self {
+            language: default_language(),
             work_minutes: 25,
             short_minutes: 5,
             long_minutes: 15,
@@ -227,7 +233,8 @@ impl Engine {
         serde_json::from_str(&raw).map_err(err)
     }
     pub fn save_settings(&self, s: Settings) -> Result<()> {
-        if !(1..=1440).contains(&s.work_minutes)
+        if !["tr", "en"].contains(&s.language.as_str())
+            || !(1..=1440).contains(&s.work_minutes)
             || !(1..=240).contains(&s.short_minutes)
             || !(1..=240).contains(&s.long_minutes)
             || !(1..=1440).contains(&s.goal_minutes)
@@ -805,7 +812,8 @@ pub fn validate_backup(b: &Backup) -> Result<()> {
         }
     }
     let s = &b.settings;
-    if !(1..=1440).contains(&s.work_minutes)
+    if !["tr", "en"].contains(&s.language.as_str())
+        || !(1..=1440).contains(&s.work_minutes)
         || !(1..=1440).contains(&s.goal_minutes)
         || !(1..=240).contains(&s.short_minutes)
         || !(1..=240).contains(&s.long_minutes)

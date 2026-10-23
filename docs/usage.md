@@ -21,3 +21,9 @@ Ayarlar → **JSON yedeği oluştur**: dersler, oturumlar, süre defteri ve ayar
 CSV tüm kayıtları (molalar dahil) içerir; tarih alanları saat dilimi ofsetiyle ISO biçimindedir. Süre saniyedir; duraklamalar dahil duvar saati aralığı değildir. CSV geri yükleme biçimi değildir. Dosyalar aynı dizinde geçici dosya + fsync + rename ile yazılır. Canlı SQLite dosyasını elle kopyalamak yerine JSON yedeğini kullanın.
 
 Android dosya seçimi ve cihazlar arası aktarım: [Android kılavuzu](../android/README.md#bilgisayar--telefon-yedeği).
+
+## Arayüz dili
+
+**Ayarlar → Dil / Language** alanından **English** veya **Türkçe** seçin ve **Ayarları kaydet / Save settings** düğmesine basın. Dil seçimi SQLite'ta saklanır ve uygulama yeniden açıldığında korunur. Ders adları ve çalışma kayıtları çevrilmez. Dil cihaz bazındadır; Wi-Fi eşitlemesi diğer cihazın dilini değiştirmez. JSON yedeği dil tercihini içerir; eski yedeklerde varsayılan Türkçedir.
+
+English: open **Settings → Dil / Language**, select **English**, then choose **Save settings**. Your selection is saved locally and survives restarts. Your course names and study records remain unchanged.

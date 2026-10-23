@@ -1,3 +1,4 @@
+import { t, message, locale, setLanguage, useLanguage } from "./i18n";
 import { useEffect, useState, useRef, useMemo, type ReactNode } from "react";
 import { invoke, isNative, isAndroid } from "./platform";
 import { SyncPanel } from "./SyncPanel";
@@ -51,21 +52,14 @@ import {
 } from "./types";
 type Page =
   "dashboard" | "timer" | "statistics" | "history" | "categories" | "settings";
-const titles: Record<Page, [string, string]> = {
-  dashboard: ["Genel bakış", "Küçük adımlar, büyük ilerlemeler."],
-  timer: ["Odak zamanı", "Tek bir işe odaklan. Gerisi bekleyebilir."],
-  statistics: ["İstatistikler", "Emeğini gör, ritmini keşfet."],
-  history: ["Çalışma geçmişi", "Her oturum, hedeflerine bir adım daha."],
-  categories: ["Derslerim", "Zamanını neye ayırdığını bil."],
-  settings: ["Ayarlar", "Kendi çalışma ritmini oluştur."],
-};
-const modeName = (m: string) => (m === "pomodoro" ? "Pomodoro" : "Kronometre");
+const modeName = (m: string) =>
+  m === "pomodoro" ? t("Pomodoro") : t("Kronometre");
 const statusName = (s: string) =>
   ({
-    running: "Çalışıyor",
-    paused: "Duraklatıldı",
-    completed: "Tamamlandı",
-    early: "Erken bitirildi",
+    running: t("Çalışıyor"),
+    paused: t("Duraklatıldı"),
+    completed: t("Tamamlandı"),
+    early: t("Erken bitirildi"),
   })[s] || s;
 function Card({
   children,
@@ -77,6 +71,19 @@ function Card({
   return <section className={"card " + className}>{children}</section>;
 }
 function App() {
+  useLanguage();
+  const titles: Record<Page, [string, string]> = {
+    dashboard: [t("Genel bakış"), t("Küçük adımlar, büyük ilerlemeler.")],
+    timer: [t("Odak zamanı"), t("Tek bir işe odaklan. Gerisi bekleyebilir.")],
+    statistics: [t("İstatistikler"), t("Emeğini gör, ritmini keşfet.")],
+    history: [
+      t("Çalışma geçmişi"),
+      t("Her oturum, hedeflerine bir adım daha."),
+    ],
+    categories: [t("Derslerim"), t("Zamanını neye ayırdığını bil.")],
+    settings: [t("Ayarlar"), t("Kendi çalışma ritmini oluştur.")],
+  };
+
   const [data, setData] = useState<Snapshot>();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -97,6 +104,7 @@ function App() {
   const refresh = async () => {
     const d = await invoke<Snapshot>("snapshot");
     if (mounted.current) {
+      setLanguage(d.settings.language || "tr");
       setData(d);
       setCategory((previous) =>
         d.categories.some((c) => c.id === previous && !c.archived)
@@ -123,7 +131,9 @@ function App() {
     mounted.current = true;
     if (!isNative()) {
       setError(
-        "FocusFlow yerel bir masaüstü uygulamasıdır. Terminalde npm run desktop komutuyla açın.",
+        t(
+          "FocusFlow yerel bir masaüstü uygulamasıdır. Terminalde npm run desktop komutuyla açın.",
+        ),
       );
       return;
     }
@@ -140,21 +150,21 @@ function App() {
       }
     };
     void poll();
-    const t = setInterval(poll, 1000);
+    const timerId = setInterval(poll, 1000);
     const visible = () => {
       if (!document.hidden) void poll();
     };
     document.addEventListener("visibilitychange", visible);
     return () => {
       mounted.current = false;
-      clearInterval(t);
+      clearInterval(timerId);
       document.removeEventListener("visibilitychange", visible);
     };
   }, []);
   useEffect(() => {
     if (!toast) return;
-    const t = setTimeout(() => setToast(""), 4500);
-    return () => clearTimeout(t);
+    const timeoutId = setTimeout(() => setToast(""), 4500);
+    return () => clearTimeout(timeoutId);
   }, [toast]);
   const run = async (fn: () => Promise<unknown>, message?: string) => {
     if (busy) return;
@@ -276,17 +286,19 @@ function App() {
   const finish = () =>
     void run(
       () => invoke("action", { action: "finish" }),
-      "Oturum gerçek çalışma süresiyle kaydedildi.",
+      t("Oturum gerçek çalışma süresiyle kaydedildi."),
     );
   const cancel = async () => {
     if (
       await ask(
-        "Aktif oturum ve bu oturuma ait çalışma süresi kalıcı olarak silinsin mi?",
+        t(
+          "Aktif oturum ve bu oturuma ait çalışma süresi kalıcı olarak silinsin mi?",
+        ),
       )
     )
       void run(
         () => invoke("action", { action: "cancel" }),
-        "Oturum iptal edildi.",
+        t("Oturum iptal edildi."),
       );
   };
   const exportData = (format: string) =>
@@ -294,13 +306,13 @@ function App() {
       const saved = await invoke<boolean>("export_file", { format });
       if (saved)
         setToast(
-          format === "json" ? "Yedek kaydedildi." : "CSV dışa aktarıldı.",
+          format === "json" ? t("Yedek kaydedildi.") : t("CSV dışa aktarıldı."),
         );
     });
   const restore = () =>
     void run(async () => {
       if (await invoke<boolean>("restore_file"))
-        setToast("Yedek geri yüklendi.");
+        setToast(t("Yedek geri yüklendi."));
     });
   const timerPanel = (compact = false) => {
     const shown = active?.mode || mode;
@@ -322,12 +334,12 @@ function App() {
             {active?.status === "running"
               ? "ODAKLANIYORSUN"
               : isBreak
-                ? "MOLA ZAMANI"
-                : "KENDİNE BİR ALAN AÇ"}
+                ? t("MOLA ZAMANI")
+                : t("KENDİNE BİR ALAN AÇ")}
           </div>
           <button
             className="icon-button"
-            aria-label="Odak modunu aç veya kapat"
+            aria-label={t("Odak modunu aç veya kapat")}
             onClick={() => {
               setPage("timer");
               setFocus(!focus);
@@ -345,7 +357,8 @@ function App() {
               setMinutes(data!.settings.work_minutes);
             }}
           >
-            <Timer size={16} /> Pomodoro
+            <Timer size={16} />
+            {" " + t("Pomodoro") + " "}
           </button>
           <button
             className={shown === "stopwatch" ? "selected" : ""}
@@ -355,7 +368,8 @@ function App() {
               setKind("work");
             }}
           >
-            <Clock3 size={16} /> Kronometre
+            <Clock3 size={16} />
+            {" " + t("Kronometre") + " "}
           </button>
         </div>
         <div className="timer-dial">
@@ -386,10 +400,10 @@ function App() {
           <div className="dial-content">
             <span className="dial-label">
               {isBreak
-                ? "NEFES AL"
+                ? t("NEFES AL")
                 : shown === "pomodoro"
-                  ? "ODAK SÜRESİ"
-                  : "AKTİF OTURUM"}
+                  ? t("ODAK SÜRESİ")
+                  : t("AKTİF OTURUM")}
             </span>
             <strong>
               {clock(
@@ -400,10 +414,10 @@ function App() {
             </strong>
             <span className="dial-caption">
               {active?.status === "paused"
-                ? "Duraklatıldı · Hazır olduğunda devam et"
+                ? t("Duraklatıldı · Hazır olduğunda devam et")
                 : active?.status === "running"
-                  ? "Şu an yaptığın şey önemli."
-                  : "Bir sonraki adımın burada başlıyor."}
+                  ? t("Şu an yaptığın şey önemli.")
+                  : t("Bir sonraki adımın burada başlıyor.")}
             </span>
           </div>
         </div>
@@ -419,26 +433,27 @@ function App() {
                     setKind("work");
                   }}
                 >
-                  {n} dk
+                  {n}
+                  {" " + t("dk") + " "}
                 </button>
               ))}
               <label className="custom-minutes">
                 <input
-                  aria-label="Özel dakika"
+                  aria-label={t("Özel dakika")}
                   type="number"
                   min="1"
                   max="1440"
                   value={minutes}
                   onChange={(e) => setMinutes(Number(e.target.value))}
                 />{" "}
-                dk
+                {" " + t("dk") + " "}
               </label>
             </div>
           )}
           <label className="category-select">
             <BookOpen size={17} />
             <select
-              aria-label="Çalışılacak ders"
+              aria-label={t("Çalışılacak ders")}
               disabled={!!active}
               value={active?.category_id || category}
               onChange={(e) => setCategory(Number(e.target.value))}
@@ -464,22 +479,23 @@ function App() {
               <Play size={18} fill="currentColor" />
             )}
             {active?.status === "running"
-              ? "Duraklat"
+              ? t("Duraklat")
               : active
-                ? "Devam et"
+                ? t("Devam et")
                 : isBreak
-                  ? "Molayı başlat"
-                  : "Odaklanmaya başla"}
+                  ? t("Molayı başlat")
+                  : t("Odaklanmaya başla")}
           </button>
           {active && (
             <>
               <button className="secondary" disabled={busy} onClick={finish}>
-                <Square size={16} /> Bitir
+                <Square size={16} />
+                {" " + t("Bitir") + " "}
               </button>
               <button
                 className="icon-button danger"
-                aria-label="Oturumu iptal et"
-                title="Oturumu ve süresini iptal et"
+                aria-label={t("Oturumu iptal et")}
+                title={t("Oturumu ve süresini iptal et")}
                 disabled={busy}
                 onClick={() => void cancel()}
               >
@@ -494,33 +510,42 @@ function App() {
               onClick={() => changeKind("work")}
               className={!isBreak ? "active-text" : ""}
             >
-              Çalışma
+              {" " + t("Çalışma") + " "}
             </button>
             <span>·</span>
             <button onClick={() => changeKind("short")}>
-              Kısa mola · {data?.settings.short_minutes} dk
+              {" " + t("Kısa mola ·") + " "}
+              {data?.settings.short_minutes}
+              {" " + t("dk") + " "}
             </button>
             <span>·</span>
             <button onClick={() => changeKind("long")}>
-              Uzun mola · {data?.settings.long_minutes} dk
+              {" " + t("Uzun mola ·") + " "}
+              {data?.settings.long_minutes}
+              {" " + t("dk") + " "}
             </button>
           </div>
         )}
         <div className="timer-footer">
           <span>
             <span className="tiny-dot" />{" "}
-            {active ? "Süre otomatik kaydediliyor" : "Her odak anı birikir"}
+            {active
+              ? t("Süre otomatik kaydediliyor")
+              : t("Her odak anı birikir")}
           </span>
           <span>
             {shown === "stopwatch"
-              ? `Bugün toplam: ${duration(todayMs)}`
-              : "Boşluk: başlat / duraklat"}
+              ? t("Bugün toplam: {0}", duration(todayMs))
+              : t("Boşluk: başlat / duraklat")}
           </span>
         </div>
         {active && (
           <p className="small muted">
-            Mod değiştirmek için mevcut oturumu bitir veya iptal et. Molalar
-            çalışma toplamına eklenmez.
+            {" " +
+              t(
+                "Mod değiştirmek için mevcut oturumu bitir veya iptal et. Molalar çalışma toplamına eklenmez.",
+              ) +
+              " "}
           </p>
         )}
       </Card>
@@ -530,14 +555,14 @@ function App() {
     <div className="stats-row">
       <Stat
         icon={<Clock3 />}
-        label="Bugünkü çalışma"
+        label={t("Bugünkü çalışma")}
         value={duration(todayMs)}
-        foot={`${pomos} tamamlanan Pomodoro`}
+        foot={t("{0} tamamlanan Pomodoro", pomos)}
         accent="purple"
       />
       <Stat
         icon={<Target />}
-        label="Günlük hedef"
+        label={t("Günlük hedef")}
         value={`%${percent}`}
         foot={`${duration(todayMs)} / ${duration(goal)}`}
         progress={percent}
@@ -545,9 +570,11 @@ function App() {
       />
       <Stat
         icon={<Flame />}
-        label="Çalışma serisi"
-        value={`${streak} gün`}
-        foot={streak ? "Ritmini korumaya devam et" : "Bugün ilk adımını at"}
+        label={t("Çalışma serisi")}
+        value={t("{0} gün", streak)}
+        foot={
+          streak ? t("Ritmini korumaya devam et") : t("Bugün ilk adımını at")
+        }
         accent="orange"
       />
     </div>
@@ -559,7 +586,7 @@ function App() {
           <Activity />
         </div>
         <h1>FocusFlow</h1>
-        <p>{error || "Yerel çalışma kayıtları açılıyor…"}</p>
+        <p>{error || t("Yerel çalışma kayıtları açılıyor…")}</p>
         {error && <code>cd ~/coding/focusflow && npm run desktop</code>}
       </div>
     );
@@ -585,15 +612,17 @@ function App() {
           </span>
           Focus<span>Flow</span>
         </a>
-        <div className="workspace-label">KİŞİSEL ÇALIŞMA ALANIN</div>
+        <div className="workspace-label">
+          {"" + t("KİŞİSEL ÇALIŞMA ALANIN") + ""}
+        </div>
         <nav>
           {(
             [
-              ["dashboard", LayoutDashboard, "Genel bakış"],
-              ["timer", Timer, "Odak zamanı"],
-              ["statistics", BarChart3, "İstatistikler"],
-              ["history", History, "Çalışma geçmişi"],
-              ["categories", BookOpen, "Derslerim"],
+              ["dashboard", LayoutDashboard, t("Genel bakış")],
+              ["timer", Timer, t("Odak zamanı")],
+              ["statistics", BarChart3, t("İstatistikler")],
+              ["history", History, t("Çalışma geçmişi")],
+              ["categories", BookOpen, t("Derslerim")],
             ] as const
           ).map(([id, Icon, label]) => (
             <button
@@ -606,10 +635,10 @@ function App() {
               <Icon size={19} />
               {isAndroid()
                 ? {
-                    dashboard: "Ana sayfa",
+                    dashboard: t("Ana sayfa"),
                     timer: "Odak",
-                    statistics: "İstatistik",
-                    history: "Geçmiş",
+                    statistics: t("İstatistik"),
+                    history: t("Geçmiş"),
                     categories: "Dersler",
                   }[id]
                 : label}
@@ -619,42 +648,47 @@ function App() {
         </nav>
         <div className="sidebar-note">
           <div className="note-icon">✦</div>
-          <p>Her gün biraz daha ileri.</p>
-          <span>Odağın, en iyi yatırımın.</span>
+          <p>{"" + t("Her gün biraz daha ileri.") + ""}</p>
+          <span>{"" + t("Odağın, en iyi yatırımın.") + ""}</span>
         </div>
         <div className="sidebar-bottom">
           <button
-            aria-label="Ayarlar"
+            aria-label={t("Ayarlar")}
             aria-current={page === "settings" ? "page" : undefined}
             className={page === "settings" ? "nav-active" : ""}
             onClick={() => setPage("settings")}
           >
-            <Settings2 size={18} /> Ayarlar
+            <Settings2 size={18} />
+            {" " + t("Ayarlar") + " "}
           </button>
           <div className="local-badge">
             <span className="tiny-dot" />
-            Yerel ve çevrimdışı <span>v1.1</span>
+            {" " + t("Yerel ve çevrimdışı") + " "}
+            <span>v1.2</span>
           </div>
         </div>
       </aside>
       <main>
         <header>
           <div className="breadcrumb">
-            Çalışma alanım <ChevronRight size={14} />
+            {" " + t("Çalışma alanım") + " "}
+            <ChevronRight size={14} />
             <span>{titles[page][0]}</span>
           </div>
           <div className="header-date">
             <span className="tiny-dot" />{" "}
-            {new Date().toLocaleDateString("tr-TR", {
+            {new Date().toLocaleDateString(locale(), {
               day: "numeric",
               month: "long",
               year: "numeric",
             })}
             <button
               className="icon-button"
-              title={isAndroid() ? "Arka plana al" : "Sistem tepsisine küçült"}
+              title={
+                isAndroid() ? t("Arka plana al") : t("Sistem tepsisine küçült")
+              }
               aria-label={
-                isAndroid() ? "Arka plana al" : "Sistem tepsisine küçült"
+                isAndroid() ? t("Arka plana al") : t("Sistem tepsisine küçült")
               }
               onClick={() => void run(() => invoke("hide_window"))}
             >
@@ -666,7 +700,7 @@ function App() {
           <div className="page-heading">
             <div>
               <div className="eyebrow">
-                {page === "dashboard" ? "BUGÜN SENİN GÜNÜN" : "FOCUSFLOW"}
+                {page === "dashboard" ? t("BUGÜN SENİN GÜNÜN") : "FOCUSFLOW"}
               </div>
               <h1>
                 {titles[page][0]}
@@ -676,12 +710,13 @@ function App() {
             </div>
             {page === "dashboard" ? (
               <div className="date-pill">
-                <span className="tiny-dot" /> Bugün
+                <span className="tiny-dot" />
+                {" " + t("Bugün") + " "}
               </div>
             ) : page === "timer" ? (
               <button className="secondary" onClick={() => setFocus(!focus)}>
                 <Focus size={16} />
-                {focus ? "Odak modundan çık" : "Odak modu"}
+                {focus ? t("Odak modundan çık") : t("Odak modu")}
               </button>
             ) : null}
           </div>
@@ -689,8 +724,10 @@ function App() {
             <div className="notice">
               <RotateCcw size={18} />
               <span>
-                {data.notice ||
-                  "Önceki oturum son kayıtlı noktada duraklatıldı. Uygulamanın kapalı olduğu süre eklenmedi; hazır olduğunda devam et."}
+                {(data.notice && message(data.notice)) ||
+                  t(
+                    "Önceki oturum son kayıtlı noktada duraklatıldı. Uygulamanın kapalı olduğu süre eklenmedi; hazır olduğunda devam et.",
+                  )}
               </span>
             </div>
           )}
@@ -703,29 +740,32 @@ function App() {
                   <Card>
                     <div className="card-heading">
                       <h2>
-                        <BarChart3 size={17} /> Haftalık ritmin
+                        <BarChart3 size={17} />
+                        {" " + t("Haftalık ritmin") + " "}
                       </h2>
                       <button
                         className="icon-button"
-                        aria-label="İstatistiklere git"
+                        aria-label={t("İstatistiklere git")}
                         onClick={() => setPage("statistics")}
                       >
                         <ArrowUpRight size={18} />
                       </button>
                     </div>
                     <div className="week-total">
-                      {duration(weekMs)} <span>bu hafta</span>
+                      {duration(weekMs)} <span>{"" + t("bu hafta") + ""}</span>
                     </div>
                     <Chart data={data} count={7} />
                     <div className="chart-caption">
-                      <span className="legend-dot" /> Çalışma süresi{" "}
-                      <span>Son 7 gün</span>
+                      <span className="legend-dot" />
+                      {" " + t("Çalışma süresi") + ""}{" "}
+                      <span>{"" + t("Son 7 gün") + ""}</span>
                     </div>
                   </Card>
                   <Card className="subjects-card">
                     <div className="card-heading">
                       <h2>
-                        <BookOpen size={17} /> Bugün derslerin
+                        <BookOpen size={17} />
+                        {" " + t("Bugün derslerin") + " "}
                       </h2>
                       <span className="tag">
                         {
@@ -738,7 +778,7 @@ function App() {
                               ),
                           ).size
                         }{" "}
-                        ders
+                        {" " + t("ders") + " "}
                       </span>
                     </div>
                     <SubjectBars data={data} from={today} />
@@ -746,19 +786,21 @@ function App() {
                       className="text-button full"
                       onClick={() => setPage("categories")}
                     >
-                      Tüm dersleri gör <ArrowRight size={14} />
+                      {" " + t("Tüm dersleri gör") + " "}
+                      <ArrowRight size={14} />
                     </button>
                   </Card>
                 </div>
               </div>
               <Card className="recent-card">
                 <div className="card-heading">
-                  <h2>Son çalışmaların</h2>
+                  <h2>{"" + t("Son çalışmaların") + ""}</h2>
                   <button
                     className="text-button"
                     onClick={() => setPage("history")}
                   >
-                    Geçmişi gör <ArrowRight size={14} />
+                    {" " + t("Geçmişi gör") + " "}
+                    <ArrowRight size={14} />
                   </button>
                 </div>
                 <SessionTable
@@ -775,24 +817,34 @@ function App() {
               {timerPanel()}
               <div className="timer-side">
                 <Card>
-                  <span className="eyebrow">BUGÜNKÜ EMEĞİN</span>
+                  <span className="eyebrow">
+                    {"" + t("BUGÜNKÜ EMEĞİN") + ""}
+                  </span>
                   <div className="big-total">{duration(todayMs)}</div>
-                  <p className="muted">Pomodoro ve kronometre, tek toplam.</p>
+                  <p className="muted">
+                    {"" + t("Pomodoro ve kronometre, tek toplam.") + ""}
+                  </p>
                   <div className="goal-track">
                     <i style={{ width: percent + "%" }} />
                   </div>
                   <div className="spread small">
-                    <span>Günlük hedef</span>
+                    <span>{"" + t("Günlük hedef") + ""}</span>
                     <span>%{percent}</span>
                   </div>
                 </Card>
                 <Card>
                   <h2>
-                    <Coffee size={18} /> Mola da sürecin bir parçası
+                    <Coffee size={18} />
+                    {" " + t("Mola da sürecin bir parçası") + " "}
                   </h2>
                   <p className="muted">
-                    Her {data.settings.long_every} tamamlanan Pomodoro sonrası
-                    uzun bir mola ver. Molalar çalışma sürene eklenmez.
+                    {" " + t("Her") + " "}
+                    {data.settings.long_every}
+                    {" " +
+                      t(
+                        "tamamlanan Pomodoro sonrası uzun bir mola ver. Molalar çalışma sürene eklenmez.",
+                      ) +
+                      " "}
                   </p>
                   <div className="pomo-dots">
                     {Array.from(
@@ -808,12 +860,19 @@ function App() {
                     )}
                   </div>
                   <p className="small muted">
-                    Bugün {pomos} Pomodoro tamamladın. Molalar elle başlatılır.
+                    {" " + t("Bugün") + " "}
+                    {pomos}
+                    {" " +
+                      t("Pomodoro tamamladın. Molalar elle başlatılır.") +
+                      " "}
                   </p>
                 </Card>
                 <div className="keyboard-hint">
-                  <kbd>Space</kbd> Başlat / duraklat <kbd>F</kbd> Odak modu{" "}
-                  <kbd>Esc</kbd> Çık
+                  <kbd>Space</kbd>
+                  {" " + t("Başlat / duraklat") + " "}
+                  <kbd>F</kbd>
+                  {" " + t("Odak modu") + ""} <kbd>Esc</kbd>
+                  {" " + t("Çık") + " "}
                 </div>
               </div>
             </div>
@@ -823,42 +882,42 @@ function App() {
               <div className="stats-row">
                 <Stat
                   icon={<Clock3 />}
-                  label="Bugün"
+                  label={t("Bugün")}
                   value={duration(todayMs)}
-                  foot={`${pomos} tamamlanan Pomodoro`}
+                  foot={t("{0} tamamlanan Pomodoro", pomos)}
                 />
                 <Stat
                   icon={<BarChart3 />}
-                  label="Bu hafta"
+                  label={t("Bu hafta")}
                   value={duration(weekMs)}
-                  foot="Pazartesiden bugüne"
+                  foot={t("Pazartesiden bugüne")}
                 />
                 <Stat
                   icon={<Target />}
-                  label="Bu ay"
+                  label={t("Bu ay")}
                   value={duration(monthMs)}
-                  foot="Takvim ayı toplamı"
+                  foot={t("Takvim ayı toplamı")}
                 />
               </div>
               <Statistics data={data} />
               <div className="stats-row">
                 <Stat
                   icon={<Clock3 />}
-                  label="Kronometre toplamı"
+                  label={t("Kronometre toplamı")}
                   value={duration(totalMode("stopwatch"))}
-                  foot="Tüm zamanlar"
+                  foot={t("Tüm zamanlar")}
                 />
                 <Stat
                   icon={<Timer />}
-                  label="En uzun çalışma"
+                  label={t("En uzun çalışma")}
                   value={duration(longest)}
-                  foot="Aktif oturum dahil, molalar hariç"
+                  foot={t("Aktif oturum dahil, molalar hariç")}
                 />
                 <Stat
                   icon={<Flame />}
-                  label="Çalışma serisi"
-                  value={`${streak} gün`}
-                  foot={`Bugünkü hedefin %${percent} tamamlandı`}
+                  label={t("Çalışma serisi")}
+                  value={t("{0} gün", streak)}
+                  foot={t("Bugünkü hedefin %{0} tamamlandı", percent)}
                 />
               </div>
             </>
@@ -870,12 +929,12 @@ function App() {
               onDelete={async (s) => {
                 if (
                   await ask(
-                    "Bu çalışma kaydı ve süresi kalıcı olarak silinsin mi?",
+                    t("Bu çalışma kaydı ve süresi kalıcı olarak silinsin mi?"),
                   )
                 )
                   void run(
                     () => invoke("delete_session", { id: s.id }),
-                    "Kayıt silindi.",
+                    t("Kayıt silindi."),
                   );
               }}
               onExport={exportData}
@@ -893,7 +952,7 @@ function App() {
                 void run(async () => {
                   await invoke("save_settings", { settings: s });
                   if (!active) setMinutes(s.work_minutes);
-                }, "Ayarlar kaydedildi.")
+                }, t("Ayarlar kaydedildi."))
               }
               onExport={exportData}
               onRestore={restore}
@@ -902,9 +961,10 @@ function App() {
           )}
           <footer>
             <span>
-              <span className="tiny-dot" /> Verilerin bu cihazda, kontrol sende.
+              <span className="tiny-dot" />
+              {" " + t("Verilerin bu cihazda, kontrol sende.") + " "}
             </span>
-            <span>Bir seferde tek bir adım.</span>
+            <span>{"" + t("Bir seferde tek bir adım.") + ""}</span>
           </footer>
         </div>
       </main>
@@ -913,22 +973,23 @@ function App() {
           className="focus-exit secondary"
           onClick={() => setFocus(false)}
         >
-          <Minimize2 size={16} /> Odak modundan çık
+          <Minimize2 size={16} />
+          {" " + t("Odak modundan çık") + " "}
         </button>
       )}
       {toast && (
         <div className="toast" role="status">
           <CheckCircle2 size={19} />
-          {toast}
+          {message(toast)}
         </div>
       )}
       {error && (
         <div className="modal-overlay error-overlay">
           <div className="modal" role="alertdialog" aria-modal="true">
-            <h2>İşlem tamamlanamadı</h2>
-            <p>{error}</p>
+            <h2>{"" + t("İşlem tamamlanamadı") + ""}</h2>
+            <p>{message(error)}</p>
             <button className="primary" onClick={() => setError("")}>
-              Tamam
+              {" " + t("Tamam") + " "}
             </button>
           </div>
         </div>
@@ -936,7 +997,7 @@ function App() {
       {confirm && (
         <div className="modal-overlay">
           <div className="modal" role="alertdialog" aria-modal="true">
-            <h2>Devam edilsin mi?</h2>
+            <h2>{"" + t("Devam edilsin mi?") + ""}</h2>
             <p>{confirm.text}</p>
             <div className="form-actions">
               <button
@@ -946,7 +1007,7 @@ function App() {
                   setConfirm(undefined);
                 }}
               >
-                Vazgeç
+                {" " + t("Vazgeç") + " "}
               </button>
               <button
                 className="primary"
@@ -955,7 +1016,7 @@ function App() {
                   setConfirm(undefined);
                 }}
               >
-                Onayla
+                {" " + t("Onayla") + " "}
               </button>
             </div>
           </div>
@@ -971,7 +1032,7 @@ function App() {
               await invoke("edit_session", payload);
               await refresh();
               setEdit(undefined);
-              setToast("Çalışma kaydı güncellendi.");
+              setToast(t("Çalışma kaydı güncellendi."));
             } catch (e) {
               setError(String(e));
             }
@@ -1036,7 +1097,7 @@ function Chart({
       key,
       ms,
       label: d.toLocaleDateString(
-        "tr-TR",
+        locale(),
         weekly ? { day: "numeric", month: "short" } : { weekday: "short" },
       ),
       today: key === dayKey(),
@@ -1053,8 +1114,14 @@ function Chart({
       aria-label={entries.map((e) => `${e.key}: ${duration(e.ms)}`).join("; ")}
     >
       <div className="chart-axis">
-        <span>{Math.ceil(max / 3600000)} sa</span>
-        <span>{(max / 7200000).toLocaleString("tr-TR")} sa</span>
+        <span>
+          {Math.ceil(max / 3600000)}
+          {" " + t("sa") + ""}
+        </span>
+        <span>
+          {(max / 7200000).toLocaleString(locale())}
+          {" " + t("sa") + ""}
+        </span>
         <span>0</span>
       </div>
       <div className="plot">
@@ -1140,8 +1207,12 @@ function SubjectBars({
       ) : (
         <div className="empty">
           <BookOpen size={25} />
-          <p>Bugün yeni bir sayfa.</p>
-          <span>İlk çalışmanı başlattığında derslerin burada görünecek.</span>
+          <p>{"" + t("Bugün yeni bir sayfa.") + ""}</p>
+          <span>
+            {"" +
+              t("İlk çalışmanı başlattığında derslerin burada görünecek.") +
+              ""}
+          </span>
         </div>
       )}
     </div>
@@ -1163,12 +1234,12 @@ function SessionTable({
       <table>
         <thead>
           <tr>
-            <th>Ders / kategori</th>
-            <th>Tarih ve saat</th>
-            <th>Mod</th>
-            <th>Süre</th>
-            <th>Durum</th>
-            {onEdit && <th aria-label="İşlemler" />}
+            <th>{"" + t("Ders / kategori") + ""}</th>
+            <th>{"" + t("Tarih ve saat") + ""}</th>
+            <th>{"" + t("Mod") + ""}</th>
+            <th>{"" + t("Süre") + ""}</th>
+            <th>{"" + t("Durum") + ""}</th>
+            {onEdit && <th aria-label={t("İşlemler")} />}
           </tr>
         </thead>
         <tbody>
@@ -1181,7 +1252,9 @@ function SessionTable({
                   <span className="table-subject">
                     <i style={{ background: c?.color }} />
                     {c?.name}
-                    {s.kind === "break" && <small> · Mola</small>}
+                    {s.kind === "break" && (
+                      <small>{" " + t("· Mola") + ""}</small>
+                    )}
                   </span>
                 </td>
                 <td>
@@ -1189,7 +1262,7 @@ function SessionTable({
                   <small className="table-end">
                     {s.ended_at
                       ? `→ ${dateTime(s.ended_at)}`
-                      : "→ devam ediyor"}
+                      : t("→ devam ediyor")}
                   </small>
                 </td>
                 <td>
@@ -1213,8 +1286,8 @@ function SessionTable({
                   <td>
                     <div className="row-actions">
                       <button
-                        aria-label="Kaydı düzenle"
-                        title="Kaydı düzenle"
+                        aria-label={t("Kaydı düzenle")}
+                        title={t("Kaydı düzenle")}
                         className="icon-button"
                         disabled={active}
                         onClick={() => onEdit(s)}
@@ -1222,8 +1295,8 @@ function SessionTable({
                         <Pencil size={14} />
                       </button>
                       <button
-                        aria-label="Kaydı sil"
-                        title="Kaydı sil"
+                        aria-label={t("Kaydı sil")}
+                        title={t("Kaydı sil")}
                         className="icon-button danger"
                         disabled={active}
                         onClick={() => onDelete?.(s)}
@@ -1241,8 +1314,8 @@ function SessionTable({
       {!sessions.length && (
         <div className="empty">
           <History size={27} />
-          <p>Henüz bir çalışma kaydı yok.</p>
-          <span>İlk oturumunla başlayabilirsin.</span>
+          <p>{"" + t("Henüz bir çalışma kaydı yok.") + ""}</p>
+          <span>{"" + t("İlk oturumunla başlayabilirsin.") + ""}</span>
         </div>
       )}
     </div>
@@ -1268,14 +1341,16 @@ function Statistics({ data }: { data: Snapshot }) {
       <Card>
         <div className="card-heading">
           <div>
-            <h2>Çalışma ritmin</h2>
-            <p className="muted small">Aktif oturum dahil, molalar hariç.</p>
+            <h2>{"" + t("Çalışma ritmin") + ""}</h2>
+            <p className="muted small">
+              {"" + t("Aktif oturum dahil, molalar hariç.") + ""}
+            </p>
           </div>
           <div className="segmented">
             {[
-              ["7", "7 gün"],
-              ["30", "30 gün"],
-              ["week", "Haftalık"],
+              ["7", t("7 gün")],
+              ["30", t("30 gün")],
+              ["week", t("Haftalık")],
             ].map(([v, l]) => (
               <button
                 key={v}
@@ -1296,26 +1371,27 @@ function Statistics({ data }: { data: Snapshot }) {
       <div className="two-columns">
         <Card>
           <div className="card-heading">
-            <h2>Derslere ayrılan süre</h2>
+            <h2>{"" + t("Derslere ayrılan süre") + ""}</h2>
             <select
-              aria-label="Ders dağılımı dönemi"
+              aria-label={t("Ders dağılımı dönemi")}
               value={period}
               onChange={(e) => setPeriod(e.target.value)}
             >
-              <option value="today">Bugün</option>
-              <option value="week">Bu hafta</option>
-              <option value="month">Bu ay</option>
+              <option value="today">{"" + t("Bugün") + ""}</option>
+              <option value="week">{"" + t("Bu hafta") + ""}</option>
+              <option value="month">{"" + t("Bu ay") + ""}</option>
             </select>
           </div>
           <SubjectBars data={data} from={from} />
         </Card>
         <Card>
           <h2>
-            Çalışma modların <small className="muted">· Tüm zamanlar</small>
+            {" " + t("Çalışma modların") + " "}
+            <small className="muted">{"" + t("· Tüm zamanlar") + ""}</small>
           </h2>
           <div className="comparison-total">
             {duration(sum)}
-            <span> toplam odak</span>
+            <span>{" " + t("toplam odak") + ""}</span>
           </div>
           <div className="comparison-track">
             <i style={{ width: sum ? (p / sum) * 100 + "%" : "0" }} />
@@ -1323,12 +1399,14 @@ function Statistics({ data }: { data: Snapshot }) {
           </div>
           <div className="comparison-labels">
             <div>
-              <span className="legend-dot" /> Pomodoro
+              <span className="legend-dot" />
+              {" " + t("Pomodoro") + " "}
               <strong>{duration(p)}</strong>
               <small>%{sum ? Math.round((p / sum) * 100) : 0}</small>
             </div>
             <div>
-              <span className="legend-dot blue" /> Kronometre
+              <span className="legend-dot blue" />
+              {" " + t("Kronometre") + " "}
               <strong>{duration(s)}</strong>
               <small>%{sum ? Math.round((s / sum) * 100) : 0}</small>
             </div>
@@ -1371,50 +1449,52 @@ function HistoryPage({
     <Card>
       <div className="card-heading">
         <h2>
-          Tüm oturumlar <span className="tag">{filtered.length}</span>
+          {" " + t("Tüm oturumlar") + " "}
+          <span className="tag">{filtered.length}</span>
         </h2>
         <button className="secondary" onClick={() => onExport("csv")}>
-          <Download size={15} /> CSV dışa aktar
+          <Download size={15} />
+          {" " + t("CSV dışa aktar") + " "}
         </button>
       </div>
       <div className="filters">
         <select
-          aria-label="Mod filtresi"
+          aria-label={t("Mod filtresi")}
           value={mode}
           onChange={(e) => {
             setMode(e.target.value);
             setPage(0);
           }}
         >
-          <option value="all">Tüm modlar</option>
-          <option value="pomodoro">Pomodoro</option>
-          <option value="stopwatch">Kronometre</option>
+          <option value="all">{"" + t("Tüm modlar") + ""}</option>
+          <option value="pomodoro">{"" + t("Pomodoro") + ""}</option>
+          <option value="stopwatch">{"" + t("Kronometre") + ""}</option>
         </select>
         <select
-          aria-label="Ders filtresi"
+          aria-label={t("Ders filtresi")}
           value={cat}
           onChange={(e) => {
             setCat(e.target.value);
             setPage(0);
           }}
         >
-          <option value="all">Tüm dersler</option>
+          <option value="all">{"" + t("Tüm dersler") + ""}</option>
           {data.categories.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
-              {c.archived ? " (silindi)" : ""}
+              {c.archived ? t(" (silindi)") : ""}
             </option>
           ))}
         </select>
         <select
-          aria-label="Durum filtresi"
+          aria-label={t("Durum filtresi")}
           value={status}
           onChange={(e) => {
             setStatus(e.target.value);
             setPage(0);
           }}
         >
-          <option value="all">Tüm durumlar</option>
+          <option value="all">{"" + t("Tüm durumlar") + ""}</option>
           {["completed", "early", "running", "paused"].map((v) => (
             <option key={v} value={v}>
               {statusName(v)}
@@ -1422,9 +1502,9 @@ function HistoryPage({
           ))}
         </select>
         <label>
-          Başlangıç
+          {" " + t("Başlangıç") + " "}
           <input
-            aria-label="Başlangıç tarihi"
+            aria-label={t("Başlangıç tarihi")}
             type="date"
             value={from}
             onChange={(e) => {
@@ -1434,9 +1514,9 @@ function HistoryPage({
           />
         </label>
         <label>
-          Bitiş
+          {" " + t("Bitiş") + " "}
           <input
-            aria-label="Bitiş tarihi"
+            aria-label={t("Bitiş tarihi")}
             type="date"
             value={to}
             onChange={(e) => {
@@ -1453,11 +1533,14 @@ function HistoryPage({
         onDelete={onDelete}
       />
       <div className="pagination">
-        <span>{filtered.length} kayıt · CSV tüm kayıtları içerir.</span>
+        <span>
+          {filtered.length}
+          {" " + t("kayıt · CSV tüm kayıtları içerir.") + ""}
+        </span>
         <div>
           <button
             className="icon-button"
-            aria-label="Önceki sayfa"
+            aria-label={t("Önceki sayfa")}
             disabled={!current}
             onClick={() => setPage(current - 1)}
           >
@@ -1468,7 +1551,7 @@ function HistoryPage({
           </span>
           <button
             className="icon-button"
-            aria-label="Sonraki sayfa"
+            aria-label={t("Sonraki sayfa")}
             disabled={(current + 1) * 15 >= filtered.length}
             onClick={() => setPage(current + 1)}
           >
@@ -1508,7 +1591,9 @@ function Categories({
   return (
     <>
       <div className="section-toolbar">
-        <p className="muted">Silinen dersler geçmiş kayıtlarında korunur.</p>
+        <p className="muted">
+          {"" + t("Silinen dersler geçmiş kayıtlarında korunur.") + ""}
+        </p>
         <button
           className="primary"
           onClick={() => {
@@ -1517,7 +1602,8 @@ function Categories({
             setColor("#a99bff");
           }}
         >
-          <Plus size={16} /> Ders ekle
+          <Plus size={16} />
+          {" " + t("Ders ekle") + " "}
         </button>
       </div>
       <div className="category-grid">
@@ -1535,7 +1621,7 @@ function Categories({
                 <div className="row-actions">
                   <button
                     className="icon-button"
-                    aria-label={c.name + " düzenle"}
+                    aria-label={c.name + t(" düzenle")}
                     onClick={() => {
                       setEditing(c);
                       setName(c.name);
@@ -1546,16 +1632,19 @@ function Categories({
                   </button>
                   <button
                     className="icon-button danger"
-                    aria-label={c.name + " sil"}
+                    aria-label={c.name + t(" sil")}
                     onClick={async () => {
                       if (
                         await ask(
-                          `${c.name} ders listesinden kaldırılsın mı? Geçmiş çalışmalar korunacak.`,
+                          t(
+                            "{0} ders listesinden kaldırılsın mı? Geçmiş çalışmalar korunacak.",
+                            c.name,
+                          ),
                         )
                       )
                         void run(
                           () => invoke("archive_category", { id: c.id }),
-                          "Ders silindi.",
+                          t("Ders silindi."),
                         );
                     }}
                   >
@@ -1567,7 +1656,7 @@ function Categories({
               <strong className="course-total">
                 {duration(totals.get(c.id) || 0)}
               </strong>
-              <span className="muted small"> bugün</span>
+              <span className="muted small">{" " + t("bugün") + ""}</span>
             </Card>
           ))}
       </div>
@@ -1584,33 +1673,33 @@ function Categories({
                   color,
                 });
                 setEditing(undefined);
-              }, "Ders kaydedildi.");
+              }, t("Ders kaydedildi."));
             }}
           >
             <div className="card-heading">
-              <h2>{editing ? "Dersi düzenle" : "Yeni ders"}</h2>
+              <h2>{editing ? t("Dersi düzenle") : t("Yeni ders")}</h2>
               <button
                 type="button"
                 className="icon-button"
-                aria-label="Kapat"
+                aria-label={t("Kapat")}
                 onClick={() => setEditing(undefined)}
               >
                 <X size={18} />
               </button>
             </div>
             <label>
-              Ders adı
+              {" " + t("Ders adı") + " "}
               <input
                 autoFocus
                 required
                 maxLength={80}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Örn. Medical Biology"
+                placeholder={t("Örn. Medical Biology")}
               />
             </label>
             <label>
-              Renk
+              {" " + t("Renk") + " "}
               <input
                 type="color"
                 value={color}
@@ -1618,7 +1707,8 @@ function Categories({
               />
             </label>
             <button className="primary" disabled={busy}>
-              <Check size={16} /> Kaydet
+              <Check size={16} />
+              {" " + t("Kaydet") + " "}
             </button>
           </form>
         </div>
@@ -1666,20 +1756,20 @@ function EditModal({
         }}
       >
         <div className="card-heading">
-          <h2>Çalışmayı düzenle</h2>
+          <h2>{"" + t("Çalışmayı düzenle") + ""}</h2>
           <button
             type="button"
             className="icon-button"
-            aria-label="Kapat"
+            aria-label={t("Kapat")}
             onClick={onClose}
           >
             <X size={18} />
           </button>
         </div>
         <label>
-          Ders
+          {" " + t("Ders") + " "}
           <select
-            aria-label="Ders"
+            aria-label={t("Ders")}
             value={category}
             onChange={(e) => setCategory(Number(e.target.value))}
           >
@@ -1691,7 +1781,7 @@ function EditModal({
           </select>
         </label>
         <label>
-          Başlangıç
+          {" " + t("Başlangıç") + " "}
           <input
             required
             type="datetime-local"
@@ -1701,7 +1791,7 @@ function EditModal({
           />
         </label>
         <label>
-          Bitiş
+          {" " + t("Bitiş") + " "}
           <input
             required
             type="datetime-local"
@@ -1711,7 +1801,7 @@ function EditModal({
           />
         </label>
         <label>
-          Gerçek çalışma süresi (saniye)
+          {" " + t("Gerçek çalışma süresi (saniye)") + " "}
           <input
             required
             type="number"
@@ -1722,11 +1812,14 @@ function EditModal({
           />
         </label>
         <p className="small muted">
-          Tarih veya süre değişirse çalışma süresi bu tarih aralığına orantılı
-          dağıtılır. Yalnızca ders değişikliği mevcut duraklamaları korur.
+          {" " +
+            t(
+              "Tarih veya süre değişirse çalışma süresi bu tarih aralığına orantılı dağıtılır. Yalnızca ders değişikliği mevcut duraklamaları korur.",
+            ) +
+            " "}
         </p>
         <button className="primary" disabled={saving}>
-          Değişiklikleri kaydet
+          {" " + t("Değişiklikleri kaydet") + " "}
         </button>
       </form>
     </div>
@@ -1764,7 +1857,8 @@ function SettingsPage({
     <div className="settings-grid">
       <Card>
         <h2>
-          <Timer size={19} /> Çalışma ritmi
+          <Timer size={19} />
+          {" " + t("Çalışma ritmi") + " "}
         </h2>
         <form
           onSubmit={(e) => {
@@ -1772,13 +1866,26 @@ function SettingsPage({
             onSave(s);
           }}
         >
+          <label className="setting-row">
+            <span>{t("Dil / Language")}</span>
+            <select
+              aria-label="Dil / Language"
+              value={s.language || "tr"}
+              onChange={(e) =>
+                setS({ ...s, language: e.target.value as "tr" | "en" })
+              }
+            >
+              <option value="tr">Türkçe</option>
+              <option value="en">English</option>
+            </select>
+          </label>
           {(
             [
-              ["work_minutes", "Pomodoro süresi (dakika)", 1440],
-              ["short_minutes", "Kısa mola (dakika)", 240],
-              ["long_minutes", "Uzun mola (dakika)", 240],
-              ["long_every", "Uzun mola aralığı (Pomodoro)", 12],
-              ["goal_minutes", "Günlük hedef (dakika)", 1440],
+              ["work_minutes", t("Pomodoro süresi (dakika)"), 1440],
+              ["short_minutes", t("Kısa mola (dakika)"), 240],
+              ["long_minutes", t("Uzun mola (dakika)"), 240],
+              ["long_every", t("Uzun mola aralığı (Pomodoro)"), 12],
+              ["goal_minutes", t("Günlük hedef (dakika)"), 1440],
             ] as const
           ).map(([k, label, max]) => (
             <label className="setting-row" key={k}>
@@ -1794,10 +1901,15 @@ function SettingsPage({
             </label>
           ))}
           <p className="small muted">
-            Ayarlar sonraki oturuma uygulanır. Molayı kendin başlatırsın.
+            {" " +
+              t(
+                "Ayarlar sonraki oturuma uygulanır. Molayı kendin başlatırsın.",
+              ) +
+              " "}
           </p>
           <button className="primary" disabled={busy}>
-            <Check size={16} /> Ayarları kaydet
+            <Check size={16} />
+            {" " + t("Ayarları kaydet") + " "}
           </button>
         </form>
       </Card>
@@ -1805,11 +1917,15 @@ function SettingsPage({
         <SyncPanel />
         <Card>
           <h2>
-            <Download size={18} /> Veriler ve yedekleme
+            <Download size={18} />
+            {" " + t("Veriler ve yedekleme") + " "}
           </h2>
           <p className="muted">
-            JSON yedeği tüm kayıtları, dersleri ve ayarları içerir. CSV, tablo
-            uygulamalarında incelemek içindir.
+            {" " +
+              t(
+                "JSON yedeği tüm kayıtları, dersleri ve ayarları içerir. CSV, tablo uygulamalarında incelemek içindir.",
+              ) +
+              " "}
           </p>
           <div className="stack-buttons">
             <button
@@ -1817,28 +1933,34 @@ function SettingsPage({
               disabled={busy}
               onClick={() => onExport("json")}
             >
-              <Download size={16} /> JSON yedeği oluştur
+              <Download size={16} />
+              {" " + t("JSON yedeği oluştur") + " "}
             </button>
             <button
               className="secondary"
               disabled={busy}
               onClick={() => onExport("csv")}
             >
-              <Download size={16} /> CSV dışa aktar
+              <Download size={16} />
+              {" " + t("CSV dışa aktar") + " "}
             </button>
             <button className="secondary" disabled={busy} onClick={onRestore}>
-              <Upload size={16} /> Yedekten geri yükle
+              <Upload size={16} />
+              {" " + t("Yedekten geri yükle") + " "}
             </button>
           </div>
-          <p className="small muted path">Veri dizini: {path}</p>
+          <p className="small muted path">
+            {"" + t("Veri dizini:") + " "}
+            {path}
+          </p>
         </Card>
         <Card>
           <h2>
-            <Settings2 size={18} /> {isAndroid() ? "Telefon" : "Masaüstü"}
+            <Settings2 size={18} /> {isAndroid() ? t("Telefon") : t("Masaüstü")}
           </h2>
           {!isAndroid() && (
             <label className="setting-row">
-              <span>Bilgisayar açılışında başlat</span>
+              <span>{"" + t("Bilgisayar açılışında başlat") + ""}</span>
               <input
                 type="checkbox"
                 checked={auto}
@@ -1857,15 +1979,17 @@ function SettingsPage({
           )}
           {autoError && (
             <p role="alert" className="danger">
-              {autoError}
+              {message(autoError)}
             </p>
           )}
           {isAndroid() && (
             <>
               <p className="small muted">
-                Pomodoro bitiş uyarıları için bildirimlere izin ver. Telefonun
-                arka plan uygulamalarını kısıtlıyorsa FocusFlow için pil
-                kullanımını sınırsız seç.
+                {" " +
+                  t(
+                    "Pomodoro bitiş uyarıları için bildirimlere izin ver. Telefonun arka plan uygulamalarını kısıtlıyorsa FocusFlow için pil kullanımını sınırsız seç.",
+                  ) +
+                  " "}
               </p>
               <button
                 className="secondary"
@@ -1875,17 +1999,23 @@ function SettingsPage({
                   )
                 }
               >
-                <Settings2 size={16} /> Android uygulama ayarları
+                <Settings2 size={16} />
+                {" " + t("Android uygulama ayarları") + " "}
               </button>
             </>
           )}
           <p className="small muted">
             {isAndroid()
-              ? "Ekran kapalıyken çalışma devam eder. Aktif oturum bildirim alanında görünür. Android uygulamayı zorla kapatırsa son kaydedilen süre korunur ve yeniden açıldığında oturum duraklatılır. Aşağıdaki düğme oturumu kaydedip duraklatır."
-              : "Pencereyi kapatmak sistem tepsisine küçültür; çalışma devam eder. Tam çıkışta oturum kaydedilip duraklatılır."}
+              ? t(
+                  "Ekran kapalıyken çalışma devam eder. Aktif oturum bildirim alanında görünür. Android uygulamayı zorla kapatırsa son kaydedilen süre korunur ve yeniden açıldığında oturum duraklatılır. Aşağıdaki düğme oturumu kaydedip duraklatır.",
+                )
+              : t(
+                  "Pencereyi kapatmak sistem tepsisine küçültür; çalışma devam eder. Tam çıkışta oturum kaydedilip duraklatılır.",
+                )}
           </p>
           <button className="secondary" disabled={busy} onClick={onQuit}>
-            <Power size={16} /> Kaydet ve uygulamadan çık
+            <Power size={16} />
+            {" " + t("Kaydet ve uygulamadan çık") + " "}
           </button>
         </Card>
       </div>

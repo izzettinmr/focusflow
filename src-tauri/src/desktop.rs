@@ -16,6 +16,17 @@ struct AppState {
     data_dir: PathBuf,
     sync: Arc<crate::sync::LanSync>,
 }
+fn tr(app: &tauri::AppHandle, text: &str) -> String {
+    let state = app.state::<AppState>();
+    let language = state
+        .engine
+        .lock()
+        .ok()
+        .and_then(|e| e.settings().ok())
+        .map(|s| s.language)
+        .unwrap_or_else(|| "tr".into());
+    crate::i18n::translate(&language, text)
+}
 fn with_engine<T>(
     state: &tauri::State<AppState>,
     f: impl FnOnce(&mut Engine) -> Result<T, String>,
@@ -109,7 +120,7 @@ async fn export_file(
     let Some(path) = app
         .dialog()
         .file()
-        .set_title("FocusFlow · Dışa aktar")
+        .set_title(tr(&app, "FocusFlow · Dışa aktar"))
         .add_filter(format.to_uppercase(), &[format.as_str()])
         .set_file_name(filename)
         .blocking_save_file()
@@ -174,7 +185,7 @@ async fn restore_file(
     let Some(path) = app
         .dialog()
         .file()
-        .set_title("FocusFlow · JSON yedeği seç")
+        .set_title(tr(&app, "FocusFlow · JSON yedeği seç"))
         .add_filter("FocusFlow JSON", &["json"])
         .blocking_pick_file()
     else {
@@ -182,7 +193,7 @@ async fn restore_file(
     };
     let path = path.into_path().map_err(|e| e.to_string())?;
     let b = read_backup(&path)?;
-    if !app.dialog().message("Mevcut veriler seçilen yedekle değiştirilecek. Önce mevcut verilerinizin otomatik güvenlik yedeği alınacak.").title("FocusFlow · Geri yüklemeyi onayla").kind(MessageDialogKind::Warning).buttons(MessageDialogButtons::OkCancelCustom("Geri yükle".into(),"Vazgeç".into())).blocking_show(){return Ok(false)}
+    if !app.dialog().message(tr(&app, "Mevcut veriler seçilen yedekle değiştirilecek. Önce mevcut verilerinizin otomatik güvenlik yedeği alınacak.")).title(tr(&app, "FocusFlow · Geri yüklemeyi onayla")).kind(MessageDialogKind::Warning).buttons(MessageDialogButtons::OkCancelCustom(tr(&app,"Geri yükle"),tr(&app,"Vazgeç"))).blocking_show(){return Ok(false)}
     with_engine(&state, |e| {
         if e.active()?.is_some() {
             return Err("Geri yüklemeden önce aktif oturumu bitirin.".into());
@@ -279,7 +290,7 @@ pub fn run() {
                                 .notification()
                                 .builder()
                                 .title("FocusFlow")
-                                .body(e)
+                                .body(tr(app, &e))
                                 .show();
                         }
                     }
@@ -291,8 +302,8 @@ pub fn run() {
                                 let _ = app
                                     .notification()
                                     .builder()
-                                    .title("Kaydedilemedi")
-                                    .body(e)
+                                    .title(tr(app, "Kaydedilemedi"))
+                                    .body(tr(app, &e))
                                     .show();
                             }
                         }
@@ -301,27 +312,44 @@ pub fn run() {
                 })
                 .build(app)?;
             let handle = app.handle().clone();
-            std::thread::spawn(move || loop {
-                std::thread::sleep(std::time::Duration::from_secs(1));
-                let state = handle.state::<AppState>();
-                if let Ok(mut e) = state.engine.lock() {
-                    if let Err(error) = e.checkpoint(Stamp::now()) {
-                        e.notice = Some(format!(
+            std::thread::spawn(move || {
+                let mut shown_language = String::new();
+                loop {
+                    std::thread::sleep(std::time::Duration::from_secs(1));
+                    let state = handle.state::<AppState>();
+                    let language = state
+                        .engine
+                        .lock()
+                        .ok()
+                        .and_then(|e| e.settings().ok())
+                        .map(|s| s.language)
+                        .unwrap_or_else(|| "tr".into());
+                    if shown_language != language {
+                        let _ = show.set_text(crate::i18n::translate(&language, "FocusFlow'u aç"));
+                        let _ = pause
+                            .set_text(crate::i18n::translate(&language, "Duraklat / devam et"));
+                        let _ = exit.set_text(crate::i18n::translate(&language, "Kaydet ve çık"));
+                        shown_language = language.clone();
+                    }
+                    if let Ok(mut e) = state.engine.lock() {
+                        if let Err(error) = e.checkpoint(Stamp::now()) {
+                            e.notice = Some(format!(
                             "Kayıt hatası: {error}. Oturumu duraklatın; disk alanını kontrol edin."
                         ));
-                    }
-                    for body in e.notifications.drain(..) {
-                        if let Err(error) = handle
-                            .notification()
-                            .builder()
-                            .title("FocusFlow")
-                            .body(body)
-                            .show()
-                        {
-                            eprintln!("Bildirim gönderilemedi: {error}");
                         }
-                    }
-                };
+                        for body in e.notifications.drain(..) {
+                            if let Err(error) = handle
+                                .notification()
+                                .builder()
+                                .title("FocusFlow")
+                                .body(crate::i18n::translate(&language, &body))
+                                .show()
+                            {
+                                eprintln!("Bildirim gönderilemedi: {error}");
+                            }
+                        }
+                    };
+                }
             });
             Ok(())
         })

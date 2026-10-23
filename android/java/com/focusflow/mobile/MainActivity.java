@@ -89,7 +89,7 @@ public final class MainActivity extends Activity {
         try { reply(id,new JSONObject().put("ok",true).put("value",v == null ? JSONObject.NULL : v)); } catch (JSONException ignored) { }
     }
     private void error(String id, Exception e) {
-        try { reply(id,new JSONObject().put("ok",false).put("error",e.getMessage() == null ? "İşlem tamamlanamadı" : e.getMessage())); } catch (JSONException ignored) { }
+        try { reply(id,new JSONObject().put("ok",false).put("error",e.getMessage() == null ? NativeBridge.tr("İşlem tamamlanamadı") : e.getMessage())); } catch (JSONException ignored) { }
     }
     private void syncTimer() throws Exception {
         JSONObject state = NativeBridge.tick();
@@ -113,7 +113,7 @@ public final class MainActivity extends Activity {
     private final class AndroidApi {
         @JavascriptInterface public void request(String id, String cmd, String args) {
             if (id == null || !id.matches("[0-9]{1,16}")) return;
-            if (cmd == null || !commands.contains(cmd) || args == null || args.length()>1_000_000) { error(id,new Exception("Geçersiz komut")); return; }
+            if (cmd == null || !commands.contains(cmd) || args == null || args.length()>1_000_000) { error(id,new Exception(NativeBridge.tr("Geçersiz komut"))); return; }
             runOnUiThread(() -> {
                 if (destroyed) return;
                 if (cmd.equals("open_app_settings")) {
@@ -139,12 +139,12 @@ public final class MainActivity extends Activity {
             String id=waitingStartId, args=waitingStartArgs; waitingStartId=null; waitingStartArgs=null;
             // Android permits the FGS without this grant; completion alerts need the grant.
             if (results.length==0 || results[0]!=PackageManager.PERMISSION_GRANTED)
-                android.widget.Toast.makeText(this,"Zamanlayıcı çalışır; bitiş uyarıları için Ayarlar → Telefon bölümünden bildirim izni verin.",android.widget.Toast.LENGTH_LONG).show();
+                android.widget.Toast.makeText(this,NativeBridge.tr("Zamanlayıcı çalışır; bitiş uyarıları için Ayarlar → Telefon bölümünden bildirim izni verin."),android.widget.Toast.LENGTH_LONG).show();
             execute(id,"start",args);
         }
     }
     private void pickFile(String id, String cmd, String args) {
-        if (fileRequest!=null) { error(id,new Exception("Önce açık dosya işlemini tamamlayın.")); return; }
+        if (fileRequest!=null) { error(id,new Exception(NativeBridge.tr("Önce açık dosya işlemini tamamlayın."))); return; }
         fileRequest=id;
         if (cmd.equals("export_file")) {
             io.execute(() -> {
@@ -171,12 +171,12 @@ public final class MainActivity extends Activity {
         if (id==null) return;
         if (result!=RESULT_OK || intent==null || intent.getData()==null) { exportData=null; success(id,false); return; }
         Uri uri=intent.getData();
-        if (!"content".equals(uri.getScheme())) { exportData=null; error(id,new Exception("Android dosya sağlayıcısı gerekli.")); return; }
+        if (!"content".equals(uri.getScheme())) { exportData=null; error(id,new Exception(NativeBridge.tr("Android dosya sağlayıcısı gerekli."))); return; }
         if (request==EXPORT) {
             final String data=exportData; exportData=null;
             io.execute(() -> {
                 try (OutputStream out=getContentResolver().openOutputStream(uri,"wt")) {
-                    if (out==null || data==null) throw new IOException("Dosya açılamadı");
+                    if (out==null || data==null) throw new IOException(NativeBridge.tr("Dosya açılamadı"));
                     out.write(data.getBytes(StandardCharsets.UTF_8)); out.flush(); success(id,true);
                 } catch (Exception e) { error(id,e); }
             });
@@ -184,20 +184,20 @@ public final class MainActivity extends Activity {
             try {
                 String raw;
                 try (InputStream in=getContentResolver().openInputStream(uri); ByteArrayOutputStream out=new ByteArrayOutputStream()) {
-                    if (in==null) throw new IOException("Yedek açılamadı");
+                    if (in==null) throw new IOException(NativeBridge.tr("Yedek açılamadı"));
                     byte[] buf=new byte[16384]; int n, total=0;
-                    while ((n=in.read(buf))!=-1) { total+=n; if (total>MAX_BACKUP) throw new IOException("Yedek 100 MB sınırını aşıyor."); out.write(buf,0,n); }
+                    while ((n=in.read(buf))!=-1) { total+=n; if (total>MAX_BACKUP) throw new IOException(NativeBridge.tr("Yedek 100 MB sınırını aşıyor.")); out.write(buf,0,n); }
                     raw=new String(out.toByteArray(),StandardCharsets.UTF_8);
                 }
                 JSONObject args=new JSONObject().put("data",raw);
                 NativeBridge.invoke("validate_restore",args);
                 runOnUiThread(() -> {
                     if (destroyed) return;
-                    new AlertDialog.Builder(this).setTitle("Yedeği geri yükle")
-                        .setMessage("Mevcut kayıtlar bu yedekle değiştirilecek. Önce mevcut kayıtların otomatik güvenlik yedeği alınacak. Bilgisayar ve telefon kayıtları otomatik birleşmez.")
-                        .setNegativeButton("Vazgeç",(d,w)->success(id,false))
+                    new AlertDialog.Builder(this).setTitle(NativeBridge.tr("Yedeği geri yükle"))
+                        .setMessage(NativeBridge.tr("Mevcut kayıtlar bu yedekle değiştirilecek. Önce mevcut kayıtların otomatik güvenlik yedeği alınacak. Bilgisayar ve telefon kayıtları otomatik birleşmez."))
+                        .setNegativeButton(NativeBridge.tr("Vazgeç"),(d,w)->success(id,false))
                         .setOnCancelListener(d->success(id,false))
-                        .setPositiveButton("Geri yükle",(d,w)->io.execute(()-> { try { NativeBridge.invoke("restore_data",args); success(id,true); } catch (Exception e) { error(id,e); } })).show();
+                        .setPositiveButton(NativeBridge.tr("Geri yükle"),(d,w)->io.execute(()-> { try { NativeBridge.invoke("restore_data",args); success(id,true); } catch (Exception e) { error(id,e); } })).show();
                 });
             } catch (Exception e) { error(id,e); }
         });
