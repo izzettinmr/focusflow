@@ -1,0 +1,23 @@
+[package]
+name = "focusflow-android"
+version = "1.0.0"
+edition = "2021"
+
+[lib]
+name = "focusflow_android"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+focusflow_lib = { package = "focusflow", path = "../../src-tauri", default-features = false }
+jni = "0.21"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = "0.4"
+
+[dev-dependencies]
+rusqlite = { version = "0.37", features = ["bundled"] }
+
+[profile.release]
+lto = "thin"
+strip = true
+codegen-units = 1

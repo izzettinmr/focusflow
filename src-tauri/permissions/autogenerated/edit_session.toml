@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-edit-session"
+description = "Enables the edit_session command without any pre-configured scope."
+commands.allow = ["edit_session"]
+
+[[permission]]
+identifier = "deny-edit-session"
+description = "Denies the edit_session command without any pre-configured scope."
+commands.deny = ["edit_session"]

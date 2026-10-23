@@ -1,0 +1,34 @@
+[package]
+name = "focusflow"
+version = "1.0.0"
+edition = "2021"
+rust-version = "1.85"
+[lib]
+name = "focusflow_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+[features]
+default = ["desktop"]
+desktop = ["dep:tauri-build", "dep:tauri", "dep:tauri-plugin-notification", "dep:tauri-plugin-dialog", "dep:tauri-plugin-autostart", "dep:tauri-plugin-single-instance"]
+[build-dependencies]
+tauri-build = { version = "2", features = [], optional = true }
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rusqlite = { version = "0.37", features = ["bundled"] }
+chrono = { version = "0.4", features = ["serde"] }
+libc = "0.2"
+thiserror = "2"
+tauri = { version = "2", features = ["tray-icon"], optional = true }
+tauri-plugin-notification = { version = "2", optional = true }
+tauri-plugin-dialog = { version = "2", optional = true }
+tauri-plugin-autostart = { version = "2", optional = true }
+tauri-plugin-single-instance = { version = "2", optional = true }
+[[bin]]
+name = "focusflow"
+path = "src/main.rs"
+required-features = ["desktop"]
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

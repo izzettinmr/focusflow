@@ -1,0 +1,21 @@
+{
+  "identifier": "default",
+  "description": "Yalnızca ana pencerenin çalışma komutları ve otomatik başlatma",
+  "windows": ["main"],
+  "permissions": [
+    "autostart:default",
+    "allow-snapshot",
+    "allow-start",
+    "allow-action",
+    "allow-save-settings",
+    "allow-save-category",
+    "allow-archive-category",
+    "allow-edit-session",
+    "allow-delete-session",
+    "allow-export-file",
+    "allow-restore-file",
+    "allow-data-path",
+    "allow-hide-window",
+    "allow-quit"
+  ]
+}

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-archive-category"
+description = "Enables the archive_category command without any pre-configured scope."
+commands.allow = ["archive_category"]
+
+[[permission]]
+identifier = "deny-archive-category"
+description = "Denies the archive_category command without any pre-configured scope."
+commands.deny = ["archive_category"]

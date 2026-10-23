@@ -1,0 +1,38 @@
+node_modules/
+dist/
+src-tauri/target/
+*.db
+*.db-wal
+*.db-shm
+test-results/
+*.tsbuildinfo
+src-tauri/gen/schemas/
+__pycache__/
+android/build/
+android/output/
+android/rust/target/
+android/test-results/
+
+# Dağıtım paketleri GitHub Releases üzerinden paylaşılır.
+*.apk
+*.apk.idsig
+*.AppImage
+
+# Kişisel veriler, ortam sırları ve özel imzalama anahtarları.
+.env
+.env.*
+!.env.example
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.pem
+*.key
+*.log
+
+# Denetimin ham kayıtları ve büyük test binary'leri yayımlanmaz.
+audit/*
+!audit/2026-10-22/
+audit/2026-10-22/*
+!audit/2026-10-22/RAPOR.md
+!audit/2026-10-22/tauri-audit-config.json
