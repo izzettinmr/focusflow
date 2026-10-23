@@ -206,6 +206,7 @@ impl Engine {
             [serde_json::to_string(&Settings::default()).map_err(err)?],
         )
         .map_err(err)?;
+        crate::sync::ledger::init(&db)?;
         Ok(Self {
             db,
             last: now,
@@ -612,12 +613,17 @@ impl Engine {
         Ok(())
     }
     pub fn delete_session(&self, id: i64) -> Result<()> {
-        self.db
-            .execute(
-                "DELETE FROM sessions WHERE id=?1 AND status NOT IN ('running','paused')",
-                [id],
-            )
-            .map_err(err)?;
+        let tx = self.db.unchecked_transaction().map_err(err)?;
+        let removable:bool=tx.query_row("SELECT EXISTS(SELECT 1 FROM sessions WHERE id=?1 AND status NOT IN ('running','paused'))",[id],|r|r.get(0)).map_err(err)?;
+        if removable {
+            crate::sync::ledger::record_deletion(&tx, id)?;
+        }
+        tx.execute(
+            "DELETE FROM sessions WHERE id=?1 AND status NOT IN ('running','paused')",
+            [id],
+        )
+        .map_err(err)?;
+        tx.commit().map_err(err)?;
         Ok(())
     }
     pub fn backup(&self) -> Result<Backup> {
@@ -637,7 +643,7 @@ impl Engine {
         }
         validate_backup(&b)?;
         let tx = self.db.transaction().map_err(err)?;
-        tx.execute_batch("DELETE FROM segments; DELETE FROM sessions; DELETE FROM categories;")
+        tx.execute_batch("DELETE FROM sync_items; DELETE FROM segments; DELETE FROM sessions; DELETE FROM categories;")
             .map_err(err)?;
         for c in &b.categories {
             tx.execute(

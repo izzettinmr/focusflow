@@ -3,6 +3,7 @@
 ```text
 src/
   App.tsx              Sayfalar, kontroller, gerçek IPC çağrıları
+  SyncPanel.tsx        Wi-Fi eşleştirme ve bağlantı durumu
   types.ts             Tipler ve yerel tarih/süre biçimleri
   style.css            Koyu tema ve duyarlı arayüz
   platform.ts          Tauri / Android yerel komut köprüsü
@@ -13,6 +14,7 @@ android/
 src-tauri/
   src/core.rs          Ortak zamanlayıcı, SQLite, yedek doğrulama, testler
   src/desktop.rs       Tauri komutları, arka plan işçisi, tepsi, bildirimler
+  src/sync/            TLS yerel bağlantı ve kimlikli kayıt birleştirme
   src/lib.rs           Çekirdek / masaüstü özellik ayrımı
   examples/ui_bridge.rs  Yalnızca UI testinin gerçek çekirdeğe taşıyıcısı
   capabilities/        En az izinli masaüstü eklenti izinleri
@@ -33,6 +35,8 @@ React süre üretmez veya kalıcı kayıt yazmaz; Rust'tan saniyede bir anlık g
 - Sistem saati önceki kayıtlardan geriye alınmışsa saat düzeltilene kadar yeni çalışma/devam etme reddedilir. Duvar saati ile monoton saatin farkı 2,5 saniyeyi aşarsa veya işlem 10 saniyeden uzun durursa belirsiz aralık eklenmez, oturum duraklatılır. Bu tercih, uyku/yeniden başlatma sırasında hatalı saatler yazmamak içindir. Arka planda normal çalışan pencere etkilenmez.
 - İstatistikler `segments` kayıtlarından hesaplanır; `sessions.elapsed_ms` aynı transaction'da tutulur ve yedek alımında tutarlılığı test edilir. Molalar bu defterin çalışma toplamından dışlanır. Aynı dakika kronometreye yeniden aktarılmaz.
 - Günlük dağılım sistemin **yerel saat dilimine** göredir. Saat dilimini sonradan değiştirirseniz geçmiş de o saat dilimine göre yeniden gruplanır. Gece yarısı bölünmesinde tamsayı yuvarlaması toplam milisaniyeyi korur.
-- Uygulama kişisel, tek cihaz kullanımı içindir. Bulut veya ağ servisi yoktur. Disk hataları arayüzde gösterilir; kayıt hatası varsa çalışmayı duraklatıp disk alanını kontrol edin.
+- Her cihaz kendi yerel SQLite veritabanıyla bağımsız çalışır. İsteğe bağlı Wi-Fi eşitlemesi yerel ağda kayıtları birleştirir; bulut servisi kullanılmaz. Disk hataları arayüzde gösterilir; kayıt hatası varsa çalışmayı duraklatıp disk alanını kontrol edin.
 
 Bu bölümdeki saat ve kontrol noktası ayrıntıları Linux içindir. Android hizmeti, ekran kapalı sayım ve güvenli kurtarma davranışı [Android kılavuzunda](../android/README.md#kayıtlar-ve-zamanlayıcı) açıklanır.
+
+Wi-Fi eşitleme kimlikleri ve değişiklik sürümleri ayrı `sync_state` / `sync_items` tablolarında tutulur. Çalışma sürelerinin kaynağı yine `sessions` ve `segments` tablolarıdır. [Eşitleme kapsamı](wifi-sync.md).

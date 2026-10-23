@@ -128,6 +128,57 @@ try {
     b.days.reduce((n, d) => n + d.duration_ms, 0),
     b.sessions.reduce((n, s) => n + s.elapsed_ms, 0),
   );
+  await page.getByRole("button", { name: "Ayarlar", exact: true }).click();
+  await page
+    .getByRole("heading", { name: "Wi-Fi eşitleme", exact: true })
+    .waitFor();
+  await page
+    .getByLabel("Bilgisayardaki bağlantı kodu")
+    .fill("FF1|8.8.8.8:443|x|x");
+  await page
+    .getByRole("button", { name: "Eşleştir ve eşitle", exact: true })
+    .click();
+  await page
+    .getByRole("alert")
+    .filter({ hasText: "Yalnızca yerel IPv4" })
+    .waitFor();
+  assert.equal((await rpc("sync_status")).ok.mode, "off");
+  if (mobile) {
+    assert.equal(
+      await page
+        .getByRole("button", { name: "Bu bilgisayarda eşitlemeyi aç" })
+        .count(),
+      0,
+    );
+  } else {
+    await page
+      .getByRole("button", {
+        name: "Bu bilgisayarda eşitlemeyi aç",
+        exact: true,
+      })
+      .click();
+    await page
+      .getByText("Telefon bağlantısına hazır", { exact: true })
+      .waitFor();
+    assert.equal((await rpc("sync_status")).ok.mode, "host");
+    if (await page.getByLabel("Telefona aktarılacak kod").count()) {
+      await page.getByRole("button", { name: "Kodu seç", exact: true }).click();
+      assert(
+        await page
+          .getByLabel("Telefona aktarılacak kod")
+          .evaluate(
+            (el) => el.selectionEnd - el.selectionStart === el.value.length,
+          ),
+      );
+    }
+    await page
+      .getByRole("button", { name: "Wi-Fi eşitlemesini kapat", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Eşleştir ve eşitle", exact: true })
+      .waitFor();
+    assert.equal((await rpc("sync_status")).ok.mode, "off");
+  }
   if (mobile) {
     for (const width of [320, 360, 390, 430]) {
       await page.setViewportSize({ width, height: 800 });

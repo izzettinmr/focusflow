@@ -12,12 +12,13 @@ use serde::de::DeserializeOwned;
 use serde_json::{json, Value};
 use std::{
     path::PathBuf,
-    sync::{Mutex, OnceLock},
+    sync::{Arc, Mutex, OnceLock},
 };
 
 struct Store {
-    engine: Engine,
+    engine: Arc<Mutex<Engine>>,
     dir: PathBuf,
+    sync: Arc<focusflow_lib::sync::LanSync>,
 }
 static STORE: OnceLock<Mutex<Option<Store>>> = OnceLock::new();
 fn arg<T: DeserializeOwned>(a: &Value, name: &str) -> Result<T, String> {
@@ -75,7 +76,23 @@ fn parse_backup(a: &Value) -> Result<Backup, String> {
     Ok(backup)
 }
 fn dispatch(store: &mut Store, cmd: &str, a: Value) -> Result<Value, String> {
-    let e = &mut store.engine;
+    if cmd == "sync_status" {
+        return value(store.sync.status()?);
+    }
+    if cmd == "sync_configure" {
+        return value(store.sync.configure(
+            &arg::<String>(&a, "action")?,
+            a.get("code").and_then(|v| v.as_str()).map(String::from),
+        )?);
+    }
+    if ["validate_restore", "restore_data"].contains(&cmd) && store.sync.enabled() {
+        return Err("Geri yüklemeden önce Wi-Fi eşitlemesini kapatın.".into());
+    }
+    let mut guard = store
+        .engine
+        .lock()
+        .map_err(|_| "Kayıt motoru kilidi hatası")?;
+    let e = &mut *guard;
     e.checkpoint(Stamp::now())?;
     match cmd {
         "snapshot" => return value(e.snapshot()?),
@@ -163,10 +180,10 @@ pub extern "system" fn Java_com_focusflow_mobile_NativeBridge_initialize(
             let path = PathBuf::from(path);
             let mut engine = Engine::open(&path)?;
             engine.set_timing_policy(TimingPolicy::Mobile);
-            *slot = Some(Store {
-                engine,
-                dir: path.parent().ok_or("Veri dizini yok")?.into(),
-            });
+            let dir: PathBuf = path.parent().ok_or("Veri dizini yok")?.into();
+            let engine = Arc::new(Mutex::new(engine));
+            let sync = focusflow_lib::sync::LanSync::new(engine.clone(), dir.clone(), false);
+            *slot = Some(Store { engine, dir, sync });
         }
         Ok(Value::Null)
     });
@@ -210,10 +227,12 @@ mod tests {
         )
         .unwrap();
         e.set_timing_policy(TimingPolicy::Mobile);
-        Store {
-            engine: e,
-            dir: std::env::temp_dir(),
-        }
+        let engine = Arc::new(Mutex::new(e));
+        let dir =
+            std::env::temp_dir().join(format!("focusflow-android-rpc-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let sync = focusflow_lib::sync::LanSync::new(engine.clone(), dir.clone(), false);
+        Store { engine, dir, sync }
     }
     #[test]
     fn malformed_requests_are_errors() {

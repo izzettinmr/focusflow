@@ -16,7 +16,7 @@ const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 const q = (s) => "'" + s.replaceAll("'", "'\\''") + "'";
 let device;
 const results = {};
-async function tap(test, perform = true) {
+async function tap(test, perform = true, optional = false) {
   for (let i = 0; i < 12; i++) {
     await adb(
       "shell",
@@ -54,6 +54,7 @@ async function tap(test, perform = true) {
       }
     }
     const n = nodes.find((n) => n.enabled === "true" && test(n));
+    if (!n && optional) return false;
     if (n) {
       if (!perform) return n;
       const b = n.bounds.match(/\d+/g).map(Number);
@@ -138,6 +139,8 @@ try {
   console.log("Testing native JSON import and confirmation…");
   const importing = native("restore_file");
   importing.catch(() => {});
+  // The provider can remember grid mode; list rows give stable native touch targets.
+  await tap((n) => n["content-desc"] === "List view", true, true);
   await tap((n) => n.text === name);
   await tap(
     (n) =>

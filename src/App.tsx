@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useMemo, type ReactNode } from "react";
 import { invoke, isNative, isAndroid } from "./platform";
+import { SyncPanel } from "./SyncPanel";
 import { isEnabled, enable, disable } from "@tauri-apps/plugin-autostart";
 import {
   Activity,
@@ -632,7 +633,7 @@ function App() {
           </button>
           <div className="local-badge">
             <span className="tiny-dot" />
-            Yerel ve çevrimdışı <span>v1.0</span>
+            Yerel ve çevrimdışı <span>v1.1</span>
           </div>
         </div>
       </aside>
@@ -1801,6 +1802,7 @@ function SettingsPage({
         </form>
       </Card>
       <div className="right-column">
+        <SyncPanel />
         <Card>
           <h2>
             <Download size={18} /> Veriler ve yedekleme

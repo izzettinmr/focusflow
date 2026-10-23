@@ -30,7 +30,7 @@ adb -s TELEFONUN_SERI_NUMARASI install -r android/output/FocusFlow.apk
 
 ## Bilgisayar ↔ telefon yedeği
 
-Her cihazın kendi yerel veritabanı vardır; otomatik bulut veya LAN eşitlemesi yoktur.
+Her cihazın kendi yerel veritabanı vardır. **1.1.0 ve üzerinde**, aynı yerel ağdaki telefon ve bilgisayar [Wi-Fi eşitlemesiyle](../docs/wifi-sync.md) dersleri ve bitmiş çalışmaları otomatik birleştirebilir. Bulut eşitlemesi bulunmaz. İlk bağlantı için bilgisayardaki Ayarlar → Wi-Fi eşitleme bölümünde gösterilen kodu telefona gir.
 
 Bilgisayarda **Ayarlar → JSON yedeği oluştur**, dosyayı telefona aktar, telefonda **Ayarlar → Yedekten geri yükle** seç. Ters yönde de aynı akış çalışır. Geri yükleme hedef cihazın kayıtlarını **değiştirir**, iki cihazın geçmişini birleştirmez. İşlem öncesinde uygulamanın özel veri dizininde otomatik güvenlik yedeği alınır. JSON/CSV dosyaları Android'in kendi dosya seçicisi üzerinden okunur/yazılır; genel depolama izni istenmez. Yedek seçerken yerel bir dosya sağlayıcısı kullanılmalıdır; seçtiğin bulut sağlayıcısının internet ihtiyacı FocusFlow'dan ayrıdır.
 
@@ -53,6 +53,8 @@ python3 scripts/build-android.py
 
 ## Testler
 
+[1.1.0 Wi-Fi ve güncel paket doğrulaması](../docs/validation/wifi-sync.md) · [1.0.0 arşiv raporu](VALIDATION.md)
+
 ```bash
 npm test
 cargo test --locked --manifest-path android/rust/Cargo.toml
@@ -73,6 +75,9 @@ python3 scripts/build-android.py --audit
 python3 scripts/start-android-test.py
 node scripts/test-android.mjs
 node scripts/test-android.mjs --files
+# Gerçek JNI/TLS eşitlemesi için önce yerel host taşıyıcısını derle:
+cargo build --manifest-path src-tauri/Cargo.toml --no-default-features --example sync_host
+node scripts/test-android-sync.mjs
 python3 scripts/smoke-android-release.py
 adb -s emulator-5556 emu kill
 ```
@@ -81,4 +86,4 @@ adb -s emulator-5556 emu kill
 
 ## Güvenlik sınırı
 
-Manifest internet, genel depolama, konum, hesap veya kişi erişimi istemez. WebView yalnızca APK içindeki sabit HTTPS kaynaklarını yükler; dış gezinme engellenir, CSP bağlantı/iframe/script kaynaklarını sınırlar ve dosya/content erişimi kapalıdır. Java köprüsü yalnızca açıkça izin verilen çalışma komutlarını kabul eder; iç yedek motoru komutları JS'ye açılmaz. Dışa/içe aktarma dosya seçimi ve geri yükleme onayı yereldir. Veritabanı uygulamanın Android sandbox'ında tutulur. Android sistem yedeği kapalıdır; kullanıcı kontrollü JSON yedeklemesi kullanılır.
+Manifest, yerel Wi-Fi soketleri için Android'in `INTERNET` iznini ister. Genel depolama, konum, hesap veya kişi erişimi istemez. WebView yalnızca APK içindeki sabit HTTPS kaynaklarını yükler; dış gezinme engellenir, CSP bağlantı/iframe/script kaynaklarını sınırlar ve dosya/content erişimi kapalıdır. Java köprüsü yalnızca açıkça izin verilen çalışma komutlarını kabul eder; iç yedek motoru komutları JS'ye açılmaz. Dışa/içe aktarma dosya seçimi ve geri yükleme onayı yereldir. Veritabanı uygulamanın Android sandbox'ında tutulur. Android sistem yedeği kapalıdır; kullanıcı kontrollü JSON yedeklemesi kullanılır.

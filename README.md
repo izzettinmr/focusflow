@@ -21,6 +21,7 @@ Görüntüler, geçici test veritabanıyla çalışan gerçek arayüzden alınm�
 - **Ortak geçmiş:** İki modun sürelerini tek yerde topla. Aynı anda bir çalışma oturumu bulunur; aynı süre iki kez sayılmaz.
 - **Ders takibi:** Physics, Linear Algebra, Medical Biology gibi derslere zaman ayır; kendi kategorilerini ekle ve düzenle.
 - **İstatistikler:** Günlük, haftalık ve aylık toplamlar; 7/30 günlük grafikler, ders dağılımı, hedef ve çalışma serisi.
+- **Wi-Fi eşitleme:** Aynı yerel ağdaki telefon ve bilgisayar arasında dersleri ve bitmiş çalışmaları birleştir.
 - **Kayıt yönetimi:** Geçmişi filtrele ve düzenle. JSON yedeği al, geri yükle veya CSV dışa aktar.
 - **Yerel kullanım:** Koyu tema, odak modu, bildirimler; Linux'ta sistem tepsisi, Android'de arka plan zamanlayıcı hizmeti.
 
@@ -30,7 +31,7 @@ Görüntüler, geçici test veritabanıyla çalışan gerçek arayüzden alınm�
 
 **[FocusFlow.apk dosyasını indir](https://github.com/izzettinmr/focusflow/releases/latest/download/FocusFlow.apk)** ve telefonunda aç. Android isterse indirmeyi açtığın tarayıcıya veya dosya yöneticisine **bu kaynaktan yükleme** izni ver. **Yükle → Aç** seç; ilk çalışma başlatıldığında bildirim iznini ver.
 
-Android **8.0+**, **ARM64 veya x86_64** gerekir. APK yaklaşık **5 MB** boyutundadır. 32 bit ARM desteklenmez. Android System WebView güncel olmalıdır.
+Android **8.0+**, **ARM64 veya x86_64** gerekir. APK yaklaşık **9 MB** boyutundadır. 32 bit ARM desteklenmez. Android System WebView güncel olmalıdır.
 
 Üreticinin pil yönetimi zamanlayıcıyı durduruyorsa uygulamanın Android pil ayarından **Sınırsız** seç. Güncelleme için JSON yedeğini alıp yeni APK'yı uygulamayı kaldırmadan üzerine yükle.
 
@@ -61,7 +62,15 @@ Uygulama menüsünden **FocusFlow**'u aç. Geliştirme sırasında `npm run desk
 
 Örneğin 40 dakika Pomodoro + 35 dakika kronometre + 50 dakika Pomodoro, **2 saat 5 dakika** çalışma olarak görünür.
 
-Telefon ve bilgisayar ayrı yerel kayıt tutar. JSON yedeğiyle aktarım yapılabilir; geri yükleme hedef geçmişi değiştirir ve iki cihazın geçmişini birleştirmez.
+## Telefon ve bilgisayarı eşitle
+
+İki cihazda da **1.1.0 veya üzeri** sürümü kullan. Bilgisayarda **Ayarlar → Wi-Fi eşitleme → Bu bilgisayarda eşitlemeyi aç** seç. Görünen bağlantı kodunu telefondaki aynı bölüme yapıştırıp **Eşleştir ve eşitle** düğmesine bas.
+
+FocusFlow bilgisayarda açıkken aynı yerel ağdaki cihazlar yaklaşık 30 saniyede bir eşitlenir. Bitmiş çalışmalar, dersler, geçmiş düzenlemeleri ve silmeler birleştirilir. Aktif sayaç ve süre ayarları cihazında kalır. Çakışan çalışma aralıkları toplamı artırmadan reddedilir.
+
+[Wi-Fi eşitleme ve bağlantı sorunları →](docs/wifi-sync.md)
+
+JSON geri yükleme ayrı bir işlemdir: hedef geçmişi değiştirir. Kayıtları birleştirmek için Wi-Fi eşitlemesini kullan.
 
 ## Proje yapısı
 
@@ -86,6 +95,8 @@ focusflow/
 Arayüz React + TypeScript, kayıt motoru Rust + SQLite'tır. Linux'ta Tauri 2, Android'de Java/WebView + JNI kullanılır. Süre ve kayıt hesaplarını ortak Rust motoru yürütür.
 
 ## Belgeler
+
+[Telefon ve bilgisayar arasında Wi-Fi eşitleme](docs/wifi-sync.md)
 
 | Konu                                               | Kılavuz                                     |
 | -------------------------------------------------- | ------------------------------------------- |

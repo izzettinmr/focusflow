@@ -1,5 +1,9 @@
 # FocusFlow kılavuzları
 
+[Wi-Fi eşitleme](wifi-sync.md): cihaz eşleştirme, otomatik kayıt birleştirme ve bağlantı sorunları.
+
+[1.1.0 doğrulama raporu](validation/wifi-sync.md) gerçek cihaz köprüsü, TLS ve kayıt birleştirme sonuçlarını içerir.
+
 Günlük kullanım için uygulamayı kurmak yeterlidir. Derleme ve test araçları geliştirme içindir.
 
 | Belge                                              | İçerik                                                                 |

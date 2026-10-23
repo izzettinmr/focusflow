@@ -23,7 +23,7 @@ public final class MainActivity extends Activity {
     private static final int EXPORT = 71, IMPORT = 72, NOTIFICATIONS = 73;
     private static final int MAX_BACKUP = 100_000_000;
     private final ExecutorService io = Executors.newSingleThreadExecutor();
-    private final Set<String> commands = new HashSet<>(Arrays.asList("snapshot", "start", "action", "save_settings", "save_category", "archive_category", "edit_session", "delete_session", "data_path", "hide_window", "quit", "export_file", "restore_file", "open_app_settings"));
+    private final Set<String> commands = new HashSet<>(Arrays.asList("snapshot", "start", "action", "save_settings", "save_category", "archive_category", "edit_session", "delete_session", "data_path", "hide_window", "quit", "export_file", "restore_file", "open_app_settings", "sync_status", "sync_configure"));
     private WebView web;
     private String fileRequest, exportData, waitingStartId, waitingStartArgs;
     private boolean destroyed = false;

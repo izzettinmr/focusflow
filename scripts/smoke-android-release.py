@@ -57,8 +57,8 @@ find('Bitir',True)
 find('Odaklanmaya başla')
 (out/'release-phone.png').write_bytes(adb('exec-out','screencap','-p',binary=True))
 package_info=adb('shell','dumpsys','package',package)
-assert 'android.permission.INTERNET' not in package_info
+assert 'android.permission.INTERNET' in package_info
 assert not any('DEBUGGABLE' in line for line in package_info.splitlines() if 'flags=[' in line or 'pkgFlags=[' in line)
-result={'release_installed':True,'actual_android_ui_start_pause_finish':True,'webview_debugging_disabled':True,'no_internet_permission':True}
+result={'release_installed':True,'actual_android_ui_start_pause_finish':True,'webview_debugging_disabled':True,'native_lan_permission_present':True}
 (out/'release-smoke.json').write_text(json.dumps(result,indent=2)+'\n')
 print('Signed release smoke passed',result,flush=True)

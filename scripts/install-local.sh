@@ -5,7 +5,12 @@ if [[ ! -f src-tauri/target/release/focusflow ]]; then
   echo 'Önce npm run tauri -- build --no-bundle komutunu çalıştırın.' >&2
   exit 1
 fi
-install -Dm755 src-tauri/target/release/focusflow "$HOME/.local/bin/focusflow"
+mkdir -p "$HOME/.local/bin"
+install_temp="$(mktemp "$HOME/.local/bin/.focusflow-install.XXXXXX")"
+trap 'if [[ -f "$install_temp" ]]; then unlink "$install_temp"; fi' EXIT
+install -m755 src-tauri/target/release/focusflow "$install_temp"
+mv -f "$install_temp" "$HOME/.local/bin/focusflow"
+trap - EXIT
 install -Dm644 src-tauri/icons/128x128.png "$HOME/.local/share/icons/hicolor/128x128/apps/focusflow.png"
 mkdir -p "$HOME/.local/share/applications"
 cat > "$HOME/.local/share/applications/focusflow.desktop" <<DESKTOP

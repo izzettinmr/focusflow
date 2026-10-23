@@ -5,6 +5,8 @@
   "permissions": [
     "autostart:default",
     "allow-snapshot",
+    "allow-sync-status",
+    "allow-sync-configure",
     "allow-start",
     "allow-action",
     "allow-save-settings",

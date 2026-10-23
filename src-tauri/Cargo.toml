@@ -1,8 +1,8 @@
 [package]
 name = "focusflow"
-version = "1.0.0"
+version = "1.1.0"
 edition = "2021"
-rust-version = "1.85"
+rust-version = "1.88"
 [lib]
 name = "focusflow_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
@@ -18,6 +18,12 @@ rusqlite = { version = "0.37", features = ["bundled"] }
 chrono = { version = "0.4", features = ["serde"] }
 libc = "0.2"
 thiserror = "2"
+getrandom = "0.3"
+sha2 = "0.10"
+base64 = "0.22"
+subtle = "2.6"
+rustls = { version = "0.23.46", default-features = false, features = ["ring", "std", "tls12"] }
+rcgen = { version = "0.14.10", default-features = false, features = ["ring", "crypto"] }
 tauri = { version = "2", features = ["tray-icon"], optional = true }
 tauri-plugin-notification = { version = "2", optional = true }
 tauri-plugin-dialog = { version = "2", optional = true }

@@ -41,8 +41,26 @@ Mobil arayüz testinden önce yukarıdaki `ui_bridge`, Playwright ve üretim web
 
 ## Tamamlanan incelemeler
 
+- [1.1.0 Wi-Fi ve Android paket doğrulaması](validation/wifi-sync.md)
+
 - [Linux doğrulaması](validation/desktop.md)
 - [Android doğrulaması](../android/VALIDATION.md)
 - [Güvenlik ve bellek raporu](../audit/2026-10-22/RAPOR.md)
 
 Raporlar tarihli test sonuçlarıdır; tüm cihazlar ve olası girdiler için garanti değildir. Linux GTK/GLib bağımlılıkları için raporda belirtilen uyarılar sürmektedir.
+
+## Yerel Wi-Fi eşitleme
+
+Çekirdek testleri; idempotent birleştirme, silme ve kimlik tekrar kullanımı, eski yedekler, aktif sayaç, ileri tarih ve çakışma reddini içerir. TCP/TLS testleri gerçek loopback bağlantısı açar; ağ erişimine izin veren bir ortam gerekir.
+
+Gerçek Android JNI → TLS → masaüstü motoru testi, yalnızca adlandırılmış test emülatöründe:
+
+```bash
+cargo build --manifest-path src-tauri/Cargo.toml --no-default-features --example sync_host
+python3 scripts/build-android.py --audit --abi x86_64
+python3 scripts/start-android-test.py
+node scripts/test-android-sync.mjs
+adb -s emulator-5556 emu kill
+```
+
+Geçici anahtarlar ve veritabanları test dizininde kalır. Test kişisel çalışma geçmişini ve fiziksel telefonu kullanmaz.

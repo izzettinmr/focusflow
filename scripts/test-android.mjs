@@ -83,6 +83,7 @@ try {
     "shell",
     "am",
     "start",
+    "-W",
     "-n",
     `${pkg}/com.focusflow.mobile.MainActivity`,
   );
@@ -256,11 +257,19 @@ try {
     "shell",
     "am",
     "start",
+    "-W",
     "-n",
     `${pkg}/com.focusflow.mobile.MainActivity`,
   );
   await sleep(2000);
-  pid = (await adb("shell", "pidof", pkg)).stdout.trim();
+  pid = "";
+  for (let i = 0; i < 30 && !pid; i++) {
+    pid = (
+      await adb("shell", "pidof", pkg).catch(() => ({ stdout: "" }))
+    ).stdout.trim();
+    if (!pid) await sleep(1000);
+  }
+  assert(pid, "Android did not restart the app");
   const reopened = await (
     await device.webView(
       { socketName: `webview_devtools_remote_${pid}` },

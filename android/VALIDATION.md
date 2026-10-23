@@ -1,6 +1,8 @@
-# Android sürümü doğrulaması
+# Android 1.0.0 sürümü doğrulaması (arşiv)
 
-23 Ekim 2026. Günlük kullanım paketi: `FocusFlow.apk`; [GitHub Releases](https://github.com/izzettinmr/focusflow/releases/latest) üzerinden dağıtılır. Yerel derleme çıktısı `android/output/FocusFlow.apk` olur.
+[Güncel 1.1.0 doğrulaması](../docs/validation/wifi-sync.md).
+
+Bu rapor, Wi-Fi eşitlemesi eklenmeden önceki **1.0.0** paketine aittir. 23 Ekim 2026. Doğrulanan paket: `FocusFlow.apk`; [1.0.0 sürümü](https://github.com/izzettinmr/focusflow/releases/tag/v1.0.0) üzerinden dağıtılır. Yerel derleme çıktısı `android/output/FocusFlow.apk` olur.
 
 - **47 Rust testi başarılı:** 24 ortak çekirdek, 22 güvenlik, 1 Android RPC girdi doğrulama testi. Sayısal güvenlik testi 20.000 mutasyon içerir.
 - Ortak motorun mobil testleri ekran kapalı uzun aralığı yalnızca bir kez saymayı, duraklama hariç tutmayı, Pomodoro hedefinde sınırlandırmayı, saat sıçramasını ve yeniden açılışta güvenli duraklamayı doğrular.

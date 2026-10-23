@@ -2,14 +2,34 @@
 use focusflow_lib::core::*;
 use serde_json::{json, Value};
 use std::io::{self, BufRead, Write};
+use std::sync::{Arc, Mutex};
 fn main() {
     let path = std::env::args().nth(1).expect("geçici SQLite yolu");
-    let mut e = Engine::open(std::path::Path::new(&path)).unwrap();
+    let engine = Arc::new(Mutex::new(
+        Engine::open(std::path::Path::new(&path)).unwrap(),
+    ));
+    let dir = std::path::Path::new(&path).parent().unwrap().to_path_buf();
+    let sync = focusflow_lib::sync::LanSync::new(
+        engine.clone(),
+        dir,
+        std::env::var_os("FOCUSFLOW_MOBILE_TEST").is_none(),
+    );
     for line in io::stdin().lock().lines() {
         let result = (|| -> Result<Value, String> {
             let v: Value = serde_json::from_str(&line.map_err(|e| e.to_string())?)
                 .map_err(|e| e.to_string())?;
             let a = &v["args"];
+            if v["cmd"] == "sync_status" {
+                return serde_json::to_value(sync.status()?).map_err(|e| e.to_string());
+            }
+            if v["cmd"] == "sync_configure" {
+                return serde_json::to_value(sync.configure(
+                    a["action"].as_str().unwrap_or(""),
+                    a["code"].as_str().map(String::from),
+                )?)
+                .map_err(|e| e.to_string());
+            }
+            let mut e = engine.lock().map_err(|e| e.to_string())?;
             e.checkpoint(Stamp::now())?;
             match v["cmd"].as_str().unwrap_or("") {
                 "snapshot" => {

@@ -36,3 +36,16 @@ npm run tauri -- build --bundles appimage
 ```
 
 Tauri yapılandırması ayrıca DEB ve RPM hedeflerini içerir. CachyOS'ta önerilen yöntem yerel kurulum veya AppImage'dır. FUSE bulunmayan sistemde AppImage `--appimage-extract-and-run` ile açılabilir. Masaüstü paketi oluşturma ilk seferde ek araçlar indirebilir.
+
+## Kurulu sürümü güncelleme
+
+Klonladığın proje dizininde:
+
+```bash
+git pull --ff-only
+npm ci
+npm run tauri -- build --no-bundle
+./scripts/install-local.sh
+```
+
+Kurulum, çalıştırılabilir dosyayı atomik olarak değiştirir; çalışma veritabanına dokunmaz. Açık olan eski süreç eski sürümle devam eder. Tepsiden **Kaydet ve çık** seçip FocusFlow'u yeniden aç. Pencerenin X düğmesi yalnızca tepsiye gizler. Wi-Fi eşitlemesi için iki cihazda da 1.1.0 veya üzeri gerekir.

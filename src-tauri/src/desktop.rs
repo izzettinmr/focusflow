@@ -1,6 +1,9 @@
 use crate::core::*;
 use crate::files::{atomic_write, csv_field, read_backup, write_export};
-use std::{path::PathBuf, sync::Mutex};
+use std::{
+    path::PathBuf,
+    sync::{Arc, Mutex},
+};
 use tauri::{
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
@@ -9,8 +12,9 @@ use tauri::{
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 use tauri_plugin_notification::NotificationExt;
 struct AppState {
-    engine: Mutex<Engine>,
+    engine: Arc<Mutex<Engine>>,
     data_dir: PathBuf,
+    sync: Arc<crate::sync::LanSync>,
 }
 fn with_engine<T>(
     state: &tauri::State<AppState>,
@@ -25,6 +29,18 @@ fn with_engine<T>(
 #[tauri::command]
 fn snapshot(state: tauri::State<AppState>) -> Result<Snapshot, String> {
     with_engine(&state, |e| e.snapshot())
+}
+#[tauri::command]
+fn sync_status(state: tauri::State<AppState>) -> Result<crate::sync::Status, String> {
+    state.sync.status()
+}
+#[tauri::command]
+fn sync_configure(
+    state: tauri::State<AppState>,
+    action: String,
+    code: Option<String>,
+) -> Result<crate::sync::Status, String> {
+    state.sync.configure(&action, code)
 }
 #[tauri::command]
 fn start(
@@ -145,6 +161,9 @@ async fn restore_file(
     app: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
 ) -> Result<bool, String> {
+    if state.sync.enabled() {
+        return Err("Geri yüklemeden önce Wi-Fi eşitlemesini kapatın.".into());
+    }
     with_engine(&state, |e| {
         if e.active()?.is_some() {
             Err("Geri yüklemeden önce aktif oturumu bitirin.".into())
@@ -218,10 +237,14 @@ pub fn run() {
             }
             #[cfg(not(unix))]
             std::fs::create_dir_all(&dir)?;
-            let engine = Engine::open(&dir.join("focusflow.db")).map_err(std::io::Error::other)?;
+            let engine = Arc::new(Mutex::new(
+                Engine::open(&dir.join("focusflow.db")).map_err(std::io::Error::other)?,
+            ));
+            let sync = crate::sync::LanSync::new(engine.clone(), dir.clone(), true);
             app.manage(AppState {
-                engine: Mutex::new(engine),
+                engine,
                 data_dir: dir,
+                sync,
             });
             let show = MenuItem::with_id(app, "show", "FocusFlow'u aç", true, None::<&str>)?;
             let pause = MenuItem::with_id(app, "pause", "Duraklat / devam et", true, None::<&str>)?;
@@ -310,6 +333,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             snapshot,
+            sync_status,
+            sync_configure,
             start,
             action,
             save_settings,

@@ -65,6 +65,12 @@ pub fn write_export(path: &Path, data_dir: &Path, data: &[u8]) -> Result<(), Str
     atomic_write(&resolved, data)
 }
 pub fn read_backup(path: &Path) -> Result<Backup, String> {
+    let raw = read_regular(path, MAX_BACKUP_BYTES)?;
+    let b: Backup = serde_json::from_slice(&raw).map_err(|e| format!("Yedek okunamadı: {e}"))?;
+    validate_backup(&b)?;
+    Ok(b)
+}
+pub fn read_regular(path: &Path, limit: u64) -> Result<Vec<u8>, String> {
     let mut options = std::fs::OpenOptions::new();
     options.read(true);
     // FIFO ve cihazların açılışta veya okumada süresiz bekletmesini engelle.
@@ -75,17 +81,15 @@ pub fn read_backup(path: &Path) -> Result<Backup, String> {
     if !meta.is_file() {
         return Err("Yalnızca normal JSON yedek dosyaları okunabilir.".into());
     }
-    if meta.len() > MAX_BACKUP_BYTES {
-        return Err("Yedek 100 MB sınırını aşıyor.".into());
+    if meta.len() > limit {
+        return Err("Dosya boyut sınırını aşıyor.".into());
     }
     let mut raw = Vec::new();
-    file.take(MAX_BACKUP_BYTES + 1)
+    file.take(limit + 1)
         .read_to_end(&mut raw)
         .map_err(|e| e.to_string())?;
-    if raw.len() as u64 > MAX_BACKUP_BYTES {
-        return Err("Yedek 100 MB sınırını aşıyor.".into());
+    if raw.len() as u64 > limit {
+        return Err("Dosya boyut sınırını aşıyor.".into());
     }
-    let b: Backup = serde_json::from_slice(&raw).map_err(|e| format!("Yedek okunamadı: {e}"))?;
-    validate_backup(&b)?;
-    Ok(b)
+    Ok(raw)
 }

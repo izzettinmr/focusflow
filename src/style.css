@@ -1293,6 +1293,56 @@ kbd {
 .settings-grid .card > h2 {
   margin-bottom: 22px;
 }
+.sync-panel {
+  min-width: 0;
+}
+.sync-panel label {
+  display: block;
+  margin: 18px 0 8px;
+}
+.sync-panel textarea {
+  width: 100%;
+  min-height: 88px;
+  resize: vertical;
+  overflow-wrap: anywhere;
+  font-family: monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 12px;
+  background: #13131f;
+  color: #e4def9;
+  border: 1px solid #3a3350;
+  border-radius: 10px;
+}
+.sync-panel select {
+  margin-top: 8px;
+  width: 100%;
+}
+.sync-panel button {
+  min-height: 44px;
+  max-width: 100%;
+  white-space: normal;
+}
+.sync-panel textarea + button,
+.sync-host-start {
+  margin-top: 12px;
+}
+.sync-panel .sync-state {
+  margin: 18px 0;
+  color: #b7a3ff;
+  font-size: 14px;
+}
+.sync-panel .sync-success {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #99d7b6;
+  margin: 16px 0;
+}
+.sync-error {
+  overflow-wrap: anywhere;
+  margin: 16px 0;
+}
 .setting-row {
   display: flex;
   align-items: center;

@@ -29,6 +29,9 @@ android/test-results/
 *.pem
 *.key
 *.log
+wifi-sync.json
+before-*.json
+FocusFlow-*.json
 
 # Denetimin ham kayıtları ve büyük test binary'leri yayımlanmaz.
 audit/*
