@@ -23,6 +23,7 @@ Görüntüler, geçici test veritabanıyla çalışan gerçek arayüzden alınm�
 - **İstatistikler:** Günlük, haftalık ve aylık toplamlar; 7/30 günlük grafikler, ders dağılımı, hedef ve çalışma serisi.
 - **Wi-Fi eşitleme:** Aynı yerel ağdaki telefon ve bilgisayar arasında dersleri ve bitmiş çalışmaları birleştir.
 - **Kayıt yönetimi:** Geçmişi filtrele ve düzenle. JSON yedeği al, geri yükle veya CSV dışa aktar.
+- **Sesli uyarılar:** Pomodoro/mola başlangıcında kısa melodi, bitişinde üç vuruşlu zil; ses ayarı ve önizleme.
 - **Dil seçimi:** Ayarlar → Dil / Language → English veya Türkçe; seçimini kaydet, yeniden açılışta korunsun.
 - **Yerel kullanım:** Koyu tema, odak modu, bildirimler; Linux'ta sistem tepsisi, Android'de arka plan zamanlayıcı hizmeti.
 

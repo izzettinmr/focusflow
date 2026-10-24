@@ -121,5 +121,22 @@
   "Önce mevcut oturumu bitirin veya iptal edin.": "Finish or discard the current session first.",
   "Dil Türkçe veya İngilizce olmalı.": "Language must be Turkish or English.",
   "Vazgeç": "Cancel",
-  "İşlem tamamlanamadı": "Could not complete the operation"
+  "İşlem tamamlanamadı": "Could not complete the operation",
+  "Sesli uyarılar": "Sound alerts",
+  "Pomodoro başlangıç ve bitiş sesi": "Pomodoro start and completion sounds",
+  "Ses düzeyi": "Volume",
+  "Başlangıç sesini dinle": "Preview start sound",
+  "Bitiş sesini dinle": "Preview completion sound",
+  "Kısa başlangıç melodisi ve üç vuruşlu bitiş zili. Telefonun alarm sesini veya bilgisayarın ses çıkışını açık tut.": "A short start chime and a three-strike completion bell. Keep your phone’s alarm volume or your computer’s audio output on.",
+  "Ses çalınıyor…": "Playing sound…",
+  "Ses çalındı.": "Sound played.",
+  "Geçersiz ses seçimi.": "Invalid sound selection.",
+  "Geçersiz ses seçimi veya ses düzeyi.": "Invalid sound selection or volume.",
+  "Ses düzeyi 1–100 arasında olmalı.": "Volume must be between 1 and 100.",
+  "Ses çalınıyor; biraz sonra yeniden deneyin.": "Audio is busy. Try again shortly.",
+  "Ses çalma zaman aşımı.": "Audio playback timed out.",
+  "Ses çalınamadı. Ses çıkışını ve PipeWire/PulseAudio bağlantısını kontrol edin.": "Could not play the sound. Check your audio output and PipeWire/PulseAudio connection.",
+  "Ses çalınamadı.": "Could not play the sound.",
+  "Ses çalma iptal edildi.": "Audio playback was canceled.",
+  "Pomodoro sesli uyarıları": "Pomodoro sound alerts"
 }

@@ -4,6 +4,13 @@ import org.json.JSONObject;
 
 final class NativeBridge {
     static volatile String language = "tr";
+    static volatile boolean soundEnabled = true;
+    static volatile int soundVolume = 80;
+    private static void audioSettings(JSONObject settings) {
+        if (settings == null) return;
+        soundEnabled = settings.optBoolean("sound_enabled", true);
+        soundVolume = settings.optInt("sound_volume", 80);
+    }
     private static JSONObject messages = new JSONObject();
     static void loadTranslations(android.content.Context context) throws Exception {
         try (java.io.InputStream in = context.getAssets().open("messages.en.json")) {
@@ -31,7 +38,8 @@ final class NativeBridge {
         JSONObject value = response.optJSONObject("value");
         if (value != null && value.has("language")) language=value.optString("language","tr");
         if (value != null && value.optJSONObject("settings") != null) language=value.getJSONObject("settings").optString("language","tr");
-        if ("save_settings".equals(command)) language=args.getJSONObject("settings").optString("language","tr");
+        if (value != null) { audioSettings(value.optJSONObject("settings")); audioSettings(value.optJSONObject("audio_settings")); }
+        if ("save_settings".equals(command)) { language=args.getJSONObject("settings").optString("language","tr"); audioSettings(args.getJSONObject("settings")); }
         if ("restore_data".equals(command)) invoke("snapshot");
         return response;
     }

@@ -2172,3 +2172,38 @@ kbd {
 .error-overlay {
   z-index: 120;
 }
+
+.sound-settings {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border, #2b2c40);
+}
+.sound-settings h3 {
+  font-size: 14px;
+  margin: 0 0 8px;
+}
+.sound-volume {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 16px 0;
+}
+.sound-volume > span {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.sound-volume input {
+  width: 100%;
+  min-width: 0;
+  accent-color: #a99bff;
+}
+.sound-preview-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.sound-preview-buttons button {
+  min-height: 44px;
+  flex: 1 1 150px;
+}

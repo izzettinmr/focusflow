@@ -15,6 +15,7 @@ struct AppState {
     engine: Arc<Mutex<Engine>>,
     data_dir: PathBuf,
     sync: Arc<crate::sync::LanSync>,
+    audio: crate::sound::Player,
 }
 fn tr(app: &tauri::AppHandle, text: &str) -> String {
     let state = app.state::<AppState>();
@@ -72,6 +73,17 @@ fn action(state: tauri::State<AppState>, action: String) -> Result<(), String> {
 #[tauri::command]
 fn save_settings(state: tauri::State<AppState>, settings: Settings) -> Result<(), String> {
     with_engine(&state, |e| e.save_settings(settings))
+}
+#[tauri::command]
+async fn preview_sound(
+    state: tauri::State<'_, AppState>,
+    cue: String,
+    volume: u32,
+) -> Result<(), String> {
+    let audio = state.audio.clone();
+    tauri::async_runtime::spawn_blocking(move || audio.preview(&cue, volume))
+        .await
+        .map_err(|e| e.to_string())?
 }
 #[tauri::command]
 fn save_category(
@@ -252,10 +264,12 @@ pub fn run() {
                 Engine::open(&dir.join("focusflow.db")).map_err(std::io::Error::other)?,
             ));
             let sync = crate::sync::LanSync::new(engine.clone(), dir.clone(), true);
+            let audio = crate::sound::Player::new(&dir).map_err(std::io::Error::other)?;
             app.manage(AppState {
                 engine,
                 data_dir: dir,
                 sync,
+                audio,
             });
             let show = MenuItem::with_id(app, "show", "FocusFlow'u aç", true, None::<&str>)?;
             let pause = MenuItem::with_id(app, "pause", "Duraklat / devam et", true, None::<&str>)?;
@@ -337,6 +351,14 @@ pub fn run() {
                             "Kayıt hatası: {error}. Oturumu duraklatın; disk alanını kontrol edin."
                         ));
                         }
+                        let cues = std::mem::take(&mut e.sounds);
+                        if let Ok(settings) = e.settings() {
+                            if settings.sound_enabled {
+                                for cue in cues {
+                                    state.audio.enqueue(cue, settings.sound_volume);
+                                }
+                            }
+                        }
                         for body in e.notifications.drain(..) {
                             if let Err(error) = handle
                                 .notification()
@@ -366,6 +388,7 @@ pub fn run() {
             start,
             action,
             save_settings,
+            preview_sound,
             save_category,
             archive_category,
             edit_session,

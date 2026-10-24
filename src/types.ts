@@ -18,6 +18,8 @@ export type Session = {
 };
 export type Settings = {
   language: Language;
+  sound_enabled: boolean;
+  sound_volume: number;
   work_minutes: number;
   short_minutes: number;
   long_minutes: number;

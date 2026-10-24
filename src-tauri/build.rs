@@ -9,6 +9,7 @@ fn main() {
                 "start",
                 "action",
                 "save_settings",
+                "preview_sound",
                 "save_category",
                 "archive_category",
                 "edit_session",

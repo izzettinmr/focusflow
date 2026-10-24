@@ -27,3 +27,9 @@ Android dosya seçimi ve cihazlar arası aktarım: [Android kılavuzu](../androi
 **Ayarlar → Dil / Language** alanından **English** veya **Türkçe** seçin ve **Ayarları kaydet / Save settings** düğmesine basın. Dil seçimi SQLite'ta saklanır ve uygulama yeniden açıldığında korunur. Ders adları ve çalışma kayıtları çevrilmez. Dil cihaz bazındadır; Wi-Fi eşitlemesi diğer cihazın dilini değiştirmez. JSON yedeği dil tercihini içerir; eski yedeklerde varsayılan Türkçedir.
 
 English: open **Settings → Dil / Language**, select **English**, then choose **Save settings**. Your selection is saved locally and survives restarts. Your course names and study records remain unchanged.
+
+## Pomodoro sesleri
+
+Pomodoro ve mola başlarken kısa bir melodi, süre tamamlanınca üç vuruşlu zil çalar. **Ayarlar → Sesli uyarılar** bölümünden sesleri dinleyebilir, açıp kapatabilir ve düzeyini değiştirebilirsin; değişiklikleri kaydet. Android'de telefonun **alarm sesini**, Linux'ta ses çıkışını açık tut.
+
+English: use **Settings → Sound alerts** to preview the start/completion chimes, enable or disable them, and adjust volume. Save your changes. On Android, keep alarm volume on. Sounds are bundled for offline playback.

@@ -13,7 +13,7 @@ public final class TimerAlarm extends BroadcastReceiver {
                 TimerService.showMessages(c, state);
                 JSONObject active = state.optJSONObject("active");
                 if (active == null || !"running".equals(active.optString("status"))) {
-                    c.stopService(new Intent(c, TimerService.class));
+                    if (!SoundPlayer.isPlaying()) c.stopService(new Intent(c, TimerService.class));
                     c.getSystemService(NotificationManager.class).cancel(TimerService.NOTIFICATION_ID);
                 }
             } catch (Exception ignored) { /* Durable Engine recovery pauses if Android killed the process. */ }

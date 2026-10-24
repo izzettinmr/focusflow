@@ -7,6 +7,7 @@ import org.json.JSONObject;
 
 public final class FocusFlowApp extends Application {
     static final String TIMER_CHANNEL = "focusflow_timer";
+    static final String SOUND_CHANNEL = "focusflow_pomodoro_chimes";
     static final String DONE_CHANNEL = "focusflow_done";
     @Override public void onCreate() {
         super.onCreate();
@@ -14,10 +15,14 @@ public final class FocusFlowApp extends Application {
         NotificationManager nm = getSystemService(NotificationManager.class);
         nm.createNotificationChannel(new NotificationChannel(TIMER_CHANNEL, NativeBridge.tr("Aktif çalışma"), NotificationManager.IMPORTANCE_LOW));
         nm.createNotificationChannel(new NotificationChannel(DONE_CHANNEL, NativeBridge.tr("Tamamlama ve hedefler"), NotificationManager.IMPORTANCE_DEFAULT));
+        NotificationChannel sounds = new NotificationChannel(SOUND_CHANNEL, NativeBridge.tr("Pomodoro sesli uyarıları"), NotificationManager.IMPORTANCE_DEFAULT);
+        sounds.setSound(null, null); // Audio is played once by the native player, not twice by the notification.
+        nm.createNotificationChannel(sounds);
         try {
             JSONObject response = new JSONObject(NativeBridge.initialize(new java.io.File(getFilesDir(), "focusflow.db").getAbsolutePath()));
             if (!response.optBoolean("ok")) throw new IllegalStateException(response.optString("error"));
             NativeBridge.invoke("snapshot");
+            sounds.setName(NativeBridge.tr("Pomodoro sesli uyarıları")); nm.createNotificationChannel(sounds);
             nm.createNotificationChannel(new NotificationChannel(TIMER_CHANNEL, NativeBridge.tr("Aktif çalışma"), NotificationManager.IMPORTANCE_LOW));
             nm.createNotificationChannel(new NotificationChannel(DONE_CHANNEL, NativeBridge.tr("Tamamlama ve hedefler"), NotificationManager.IMPORTANCE_DEFAULT));
         } catch (Exception e) { throw new IllegalStateException(NativeBridge.tr("Çalışma kayıtları açılamadı"), e); }

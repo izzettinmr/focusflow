@@ -29,11 +29,16 @@ public final class TimerService extends Service {
         return b.build();
     }
     static void showMessages(Context c, JSONObject state) {
+        JSONArray cues = state.optJSONArray("sounds");
+        if (NativeBridge.soundEnabled && NativeBridge.soundVolume > 0 && cues != null) {
+            for (int i=0; i<cues.length(); i++) SoundPlayer.play(c, cues.optString(i), NativeBridge.soundVolume, null);
+        }
         JSONArray messages = state.optJSONArray("messages");
         if (messages == null) return;
         NotificationManager nm = c.getSystemService(NotificationManager.class);
         for (int i=0; i<messages.length(); i++) {
-            Notification n = new Notification.Builder(c, FocusFlowApp.DONE_CHANNEL)
+            boolean pomodoro = messages.optString(i).equals("Pomodoro tamamlandı. Emeğine sağlık! Bir mola ver.") || messages.optString(i).equals("Mola bitti. Yeni bir odak oturumuna hazırsın.");
+            Notification n = new Notification.Builder(c, pomodoro ? FocusFlowApp.SOUND_CHANNEL : FocusFlowApp.DONE_CHANNEL)
                 .setSmallIcon(com.focusflow.mobile.R.drawable.ic_notification).setContentTitle("FocusFlow")
                 .setContentText(NativeBridge.tr(messages.optString(i))).setStyle(new Notification.BigTextStyle().bigText(NativeBridge.tr(messages.optString(i))))
                 .setContentIntent(openApp(c)).setAutoCancel(true).build();
@@ -60,7 +65,9 @@ public final class TimerService extends Service {
             showMessages(this, state);
             JSONObject active = state.optJSONObject("active");
             if (active == null || !"running".equals(active.optString("status"))) {
-                cancelAlarm(this); stopForeground(STOP_FOREGROUND_REMOVE); stopSelf(); return;
+                cancelAlarm(this);
+                if (!SoundPlayer.isPlaying()) { stopForeground(STOP_FOREGROUND_REMOVE); stopSelf(); }
+                return;
             }
             if (!shownLanguage.equals(NativeBridge.language) || shownSession != active.optLong("id") || shownTarget != active.optLong("target_ms") || !shownStatus.equals(active.optString("status"))) {
                 shownLanguage = NativeBridge.language; shownSession = active.optLong("id"); shownTarget = active.optLong("target_ms"); shownStatus = active.optString("status");

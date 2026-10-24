@@ -10,6 +10,7 @@
     "allow-start",
     "allow-action",
     "allow-save-settings",
+    "allow-preview-sound",
     "allow-save-category",
     "allow-archive-category",
     "allow-edit-session",

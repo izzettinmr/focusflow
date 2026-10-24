@@ -44,6 +44,9 @@ for abi,(target,clang) in abis.items():
 res=build/'res'
 if res.exists(): shutil.rmtree(res)
 shutil.copytree(root/'android/res',res)
+(res/'raw').mkdir(exist_ok=True)
+shutil.copyfile(root/'assets/sounds/start.wav',res/'raw/focusflow_start.wav')
+shutil.copyfile(root/'assets/sounds/complete.wav',res/'raw/focusflow_complete.wav')
 shutil.copy2(root/'src-tauri/icons/128x128.png',res/'drawable/icon.png')
 manifest=(root/'android/AndroidManifest.xml').read_text()
 if args.audit: manifest=manifest.replace('<application ', '<application android:debuggable="true" ')

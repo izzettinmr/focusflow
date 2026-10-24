@@ -138,6 +138,20 @@ try {
       args,
     });
   const stopwatchStartWall = Date.now();
+  await native("preview_sound", { cue: "start", volume: 50 });
+  await native("preview_sound", { cue: "complete", volume: 50 });
+  await assert.rejects(() =>
+    native("preview_sound", { cue: "../../etc/passwd", volume: 50 }),
+  );
+  const previewLog = (
+    await adb("logcat", "-d", "-s", "FocusFlowAudio:I", "*:S")
+  ).stdout;
+  assert(
+    previewLog.includes("played:start") &&
+      previewLog.includes("played:complete"),
+  );
+  results.native_sound_previews = true;
+  await adb("logcat", "-c");
   await native("start", {
     mode: "stopwatch",
     kind: "work",
@@ -204,6 +218,25 @@ try {
     b.sessions.reduce((n, s) => n + s.elapsed_ms, 0),
   );
   results.pomodoro_alarm_notification_single_shared_total = true;
+  const audioLog = (await adb("logcat", "-d", "-s", "FocusFlowAudio:I", "*:S"))
+    .stdout;
+  assert.equal(
+    (audioLog.match(/played:start/g) || []).length,
+    1,
+    "Start sound must play once",
+  );
+  assert.equal(
+    (audioLog.match(/played:complete/g) || []).length,
+    1,
+    "Completion sound must play once with screen off",
+  );
+  results.native_pomodoro_audio_once_screen_off = true;
+  const quietSettings = (await native("snapshot")).settings;
+  await native("save_settings", {
+    settings: { ...quietSettings, sound_enabled: false },
+  });
+  await adb("logcat", "-c");
+
   await native("start", {
     mode: "pomodoro",
     kind: "break",
@@ -218,6 +251,13 @@ try {
     b.days.reduce((n, d) => n + d.duration_ms, 0),
   );
   results.break_excluded = true;
+  await sleep(1000);
+  const quietLog = (await adb("logcat", "-d", "-s", "FocusFlowAudio:I", "*:S"))
+    .stdout;
+  assert(!quietLog.includes("played:"), "Disabled sounds must remain silent");
+  await native("save_settings", { settings: quietSettings });
+  results.native_sound_toggle = true;
+
   for (const name of [
     "Genel bakış",
     "Odak zamanı",

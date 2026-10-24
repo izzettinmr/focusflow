@@ -38,11 +38,21 @@ pub struct Segment {
 pub struct Settings {
     #[serde(default = "default_language")]
     pub language: String,
+    #[serde(default = "default_sound_enabled")]
+    pub sound_enabled: bool,
+    #[serde(default = "default_sound_volume")]
+    pub sound_volume: u32,
     pub work_minutes: u32,
     pub short_minutes: u32,
     pub long_minutes: u32,
     pub goal_minutes: u32,
     pub long_every: u32,
+}
+fn default_sound_enabled() -> bool {
+    true
+}
+fn default_sound_volume() -> u32 {
+    80
 }
 fn default_language() -> String {
     "tr".into()
@@ -51,6 +61,8 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             language: default_language(),
+            sound_enabled: default_sound_enabled(),
+            sound_volume: default_sound_volume(),
             work_minutes: 25,
             short_minutes: 5,
             long_minutes: 15,
@@ -113,12 +125,19 @@ pub enum TimingPolicy {
     // Only within the same living process, with a boot clock. Reopening still pauses.
     Mobile,
 }
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SoundCue {
+    Start,
+    Complete,
+}
 pub struct Engine {
     pub db: Connection,
     last: Stamp,
     pub recovery: bool,
     pub notice: Option<String>,
     pub notifications: Vec<String>,
+    pub sounds: Vec<SoundCue>,
     timing_policy: TimingPolicy,
 }
 impl Engine {
@@ -219,6 +238,7 @@ impl Engine {
             recovery: recovered,
             notice: None,
             notifications: vec![],
+            sounds: vec![],
             timing_policy: TimingPolicy::Desktop,
         })
     }
@@ -233,7 +253,8 @@ impl Engine {
         serde_json::from_str(&raw).map_err(err)
     }
     pub fn save_settings(&self, s: Settings) -> Result<()> {
-        if !["tr", "en"].contains(&s.language.as_str())
+        if s.sound_volume > 100
+            || !["tr", "en"].contains(&s.language.as_str())
             || !(1..=1440).contains(&s.work_minutes)
             || !(1..=240).contains(&s.short_minutes)
             || !(1..=240).contains(&s.long_minutes)
@@ -370,6 +391,7 @@ impl Engine {
             mono: now.mono,
         };
         if done {
+            self.queue_sound(SoundCue::Complete);
             self.notifications.push(
                 if s.kind == "break" {
                     "Mola bitti. Yeni bir odak oturumuna hazırsın."
@@ -400,6 +422,11 @@ impl Engine {
             wall: now.wall.max(latest),
             mono: now.mono,
         })
+    }
+    fn queue_sound(&mut self, cue: SoundCue) {
+        if self.sounds.len() < 16 {
+            self.sounds.push(cue);
+        }
     }
     pub fn start(
         &mut self,
@@ -432,6 +459,9 @@ impl Engine {
             return Err("Geçerli bir ders seçin.".into());
         }
         self.db.execute("INSERT INTO sessions(mode,kind,category_id,started_at,status,target_ms) VALUES(?1,?2,?3,?4,'running',?5)",params![mode,kind,category_id,now.wall,if mode=="pomodoro" {minutes as i64*60_000}else{0}]).map_err(err)?;
+        if mode == "pomodoro" {
+            self.queue_sound(SoundCue::Start);
+        }
         self.last = now;
         self.recovery = false;
         self.notice = None;
@@ -812,7 +842,8 @@ pub fn validate_backup(b: &Backup) -> Result<()> {
         }
     }
     let s = &b.settings;
-    if !["tr", "en"].contains(&s.language.as_str())
+    if s.sound_volume > 100
+        || !["tr", "en"].contains(&s.language.as_str())
         || !(1..=1440).contains(&s.work_minutes)
         || !(1..=1440).contains(&s.goal_minutes)
         || !(1..=240).contains(&s.short_minutes)

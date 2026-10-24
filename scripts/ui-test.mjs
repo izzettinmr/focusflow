@@ -99,12 +99,20 @@ try {
   await mkdir("test-results", { recursive: true });
   // Language is stored by the real SQLite engine; reload must preserve it.
   await page.getByRole("button", { name: "Ayarlar", exact: true }).click();
+  await page
+    .getByLabel("Pomodoro başlangıç ve bitiş sesi", { exact: true })
+    .uncheck();
+  const volume = page.getByLabel("Ses düzeyi", { exact: true });
+  await volume.press("Home");
+  for (let i = 0; i < 7; i++) await volume.press("ArrowRight");
   await page.getByLabel("Dil / Language", { exact: true }).selectOption("en");
   await page
     .getByRole("button", { name: "Ayarları kaydet", exact: true })
     .click();
   await page.getByRole("heading", { name: "Settings", exact: true }).waitFor();
   assert.equal((await rpc("snapshot")).ok.settings.language, "en");
+  assert.equal((await rpc("snapshot")).ok.settings.sound_enabled, false);
+  assert.equal((await rpc("snapshot")).ok.settings.sound_volume, 35);
   assert.equal(await page.locator("html").getAttribute("lang"), "en");
   await page.reload();
   await page

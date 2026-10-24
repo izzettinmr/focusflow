@@ -664,7 +664,7 @@ function App() {
           <div className="local-badge">
             <span className="tiny-dot" />
             {" " + t("Yerel ve çevrimdışı") + " "}
-            <span>v1.2</span>
+            <span>v1.3</span>
           </div>
         </div>
       </aside>
@@ -1844,6 +1844,22 @@ function SettingsPage({
     [auto, setAuto] = useState(false),
     [autoError, setAutoError] = useState(""),
     [path, setPath] = useState("");
+  const [soundBusy, setSoundBusy] = useState(false);
+  const [soundStatus, setSoundStatus] = useState("");
+  const [soundError, setSoundError] = useState("");
+  const preview = async (cue: "start" | "complete") => {
+    setSoundBusy(true);
+    setSoundStatus("");
+    setSoundError("");
+    try {
+      await invoke("preview_sound", { cue, volume: s.sound_volume ?? 80 });
+      setSoundStatus(t("Ses çalındı."));
+    } catch (e) {
+      setSoundError(message(String(e)));
+    } finally {
+      setSoundBusy(false);
+    }
+  };
   useEffect(() => {
     if (!isAndroid())
       void isEnabled()
@@ -1900,6 +1916,73 @@ function SettingsPage({
               />
             </label>
           ))}
+          <div className="sound-settings">
+            <h3>{t("Sesli uyarılar")}</h3>
+            <label className="setting-row">
+              <span>{t("Pomodoro başlangıç ve bitiş sesi")}</span>
+              <input
+                type="checkbox"
+                checked={s.sound_enabled ?? true}
+                onChange={(e) =>
+                  setS({ ...s, sound_enabled: e.target.checked })
+                }
+              />
+            </label>
+            <label className="sound-volume">
+              <span>
+                {t("Ses düzeyi")} <output>{s.sound_volume ?? 80}%</output>
+              </span>
+              <input
+                aria-label={t("Ses düzeyi")}
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                value={s.sound_volume ?? 80}
+                onChange={(e) =>
+                  setS({ ...s, sound_volume: Number(e.target.value) })
+                }
+              />
+            </label>
+            <div className="sound-preview-buttons">
+              <button
+                type="button"
+                className="secondary"
+                disabled={soundBusy || !(s.sound_volume ?? 80)}
+                onClick={() => void preview("start")}
+              >
+                {t("Başlangıç sesini dinle")}
+              </button>
+              <button
+                type="button"
+                className="secondary"
+                disabled={soundBusy || !(s.sound_volume ?? 80)}
+                onClick={() => void preview("complete")}
+              >
+                {t("Bitiş sesini dinle")}
+              </button>
+            </div>
+            <p className="small muted">
+              {t(
+                "Kısa başlangıç melodisi ve üç vuruşlu bitiş zili. Telefonun alarm sesini veya bilgisayarın ses çıkışını açık tut.",
+              )}
+            </p>
+            {soundBusy && (
+              <p role="status" className="small muted">
+                {t("Ses çalınıyor…")}
+              </p>
+            )}
+            {soundStatus && (
+              <p role="status" className="small muted">
+                {soundStatus}
+              </p>
+            )}
+            {soundError && (
+              <p role="alert" className="danger">
+                {soundError}
+              </p>
+            )}
+          </div>
           <p className="small muted">
             {" " +
               t(

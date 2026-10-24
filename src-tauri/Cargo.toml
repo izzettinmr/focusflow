@@ -1,6 +1,6 @@
 [package]
 name = "focusflow"
-version = "1.2.0"
+version = "1.3.0"
 edition = "2021"
 rust-version = "1.88"
 [lib]
@@ -38,3 +38,7 @@ required-features = ["desktop"]
 lto = "thin"
 codegen-units = 1
 strip = true
+
+[[example]]
+name = "sound_preview"
+required-features = ["desktop"]

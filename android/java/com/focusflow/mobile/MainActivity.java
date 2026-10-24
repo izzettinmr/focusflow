@@ -23,7 +23,7 @@ public final class MainActivity extends Activity {
     private static final int EXPORT = 71, IMPORT = 72, NOTIFICATIONS = 73;
     private static final int MAX_BACKUP = 100_000_000;
     private final ExecutorService io = Executors.newSingleThreadExecutor();
-    private final Set<String> commands = new HashSet<>(Arrays.asList("snapshot", "start", "action", "save_settings", "save_category", "archive_category", "edit_session", "delete_session", "data_path", "hide_window", "quit", "export_file", "restore_file", "open_app_settings", "sync_status", "sync_configure"));
+    private final Set<String> commands = new HashSet<>(Arrays.asList("snapshot", "start", "action", "save_settings", "save_category", "archive_category", "edit_session", "delete_session", "data_path", "hide_window", "quit", "export_file", "restore_file", "open_app_settings", "sync_status", "sync_configure", "preview_sound"));
     private WebView web;
     private String fileRequest, exportData, waitingStartId, waitingStartArgs;
     private boolean destroyed = false;
@@ -96,7 +96,7 @@ public final class MainActivity extends Activity {
         TimerService.showMessages(this,state);
         JSONObject active = state.optJSONObject("active");
         if (active != null && "running".equals(active.optString("status"))) startForegroundService(new Intent(this,TimerService.class));
-        else { TimerService.cancelAlarm(this); stopService(new Intent(this,TimerService.class)); }
+        else { TimerService.cancelAlarm(this); if (!SoundPlayer.isPlaying()) stopService(new Intent(this,TimerService.class)); }
     }
     private void execute(String id, String cmd, String args) {
         io.execute(() -> {
@@ -116,6 +116,16 @@ public final class MainActivity extends Activity {
             if (cmd == null || !commands.contains(cmd) || args == null || args.length()>1_000_000) { error(id,new Exception(NativeBridge.tr("Geçersiz komut"))); return; }
             runOnUiThread(() -> {
                 if (destroyed) return;
+                if (cmd.equals("preview_sound")) {
+                    try {
+                        JSONObject options = new JSONObject(args);
+                        String cue = options.getString("cue"); int volume = options.getInt("volume");
+                        SoundPlayer.play(MainActivity.this, cue, volume, failure -> {
+                            if (failure == null) success(id,null); else error(id,new Exception(failure));
+                        });
+                    } catch (Exception e) { error(id,e); }
+                    return;
+                }
                 if (cmd.equals("open_app_settings")) {
                     try { startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:" + getPackageName()))); success(id,null); }
                     catch (Exception e) { error(id,e); } return;
